@@ -1,0 +1,11 @@
+{
+    "controller": "pl-faded-parsons.py",
+    "dependencies": {
+        "elementScripts": [
+            "pl-faded-parsons.js"
+        ],
+        "elementStyles": [
+            "pl-faded-parsons.css"
+        ]
+    }
+}
