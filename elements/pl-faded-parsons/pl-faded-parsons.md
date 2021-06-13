@@ -36,8 +36,7 @@ Attribute | Type | Default | Description
 `language`       | string  | "py"       | Language the problem is in, given as the filename extension for files in that language. Currently must be `py` (Python 3).
 `answers-name`   | string  | "fp"       | Name of answers dict, only matters if >1 Faded Parsons element in same question
 `partial-credit` | boolean | false      | Whether to give partial credit; see below.
-`code`           | string  | `code.`_lang_  | Where the code lives under `clientFilesQuestion`, where _lang_ is the value of the `lang` attribute above
-`tests`          | string  | `tests.`_lang_ | Where the test files live under `clientFilesQuestion`
+`line-order`     | string  | "alpha"    | How to display the lines of code to the student: `alpha` (alphabetical order), `fixed` (exactly as they appear in `code_lines.py`), or `random`.
 
 #### Example implementations
 
