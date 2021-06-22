@@ -2,6 +2,7 @@ import prairielearn as pl
 import lxml.html as xml
 import random
 import chevron
+import os
 
 
 def prepare(element_html, data):
@@ -10,11 +11,10 @@ def prepare(element_html, data):
 
 
 def render(element_html, data):
-    html_params = {
-        'number': data['params']['random_number'],
-        'image_url': data['options']['client_files_element_url'] + '/block_i.png'
-    }
-    with open('course-element.mustache', 'r') as f:
+    html_params = {}
+    # read all the lines of serverFilesCourse/code_lines.py into an array
+    html_params["lines_array"] = read_code_lines(data)
+    with open('pl-faded-parsons.mustache', 'r') as f:
         return chevron.render(f, html_params).strip()
 
 #
@@ -28,7 +28,9 @@ def parse(element_html, data):
     # parsed/walked, etc
     element = xml.fragment_fromstring(element_html)
 
-    # only Python examples allowed right now (lang MUST be "py")
+    # `element` is now an XML data structure - see docs for LXML library at lxml.de
+    
+    # only Python problems are allowed right now (lang MUST be "py")
     lang = pl.get_string_attrib(element, 'language')
 
     # TBD do error checking here for other attribute values....
@@ -41,3 +43,11 @@ def grade(element_html, data):
     return data
 
     
+#
+# Helper functions
+#
+def read_code_lines(data):
+    path = os.path.join(data["options"]["question_path"], 'serverFilesQuestion', 'code_lines.py')
+    with open(path, 'r') as f:
+        lines = [line.rstrip() for line in f.readlines()]
+    return lines
