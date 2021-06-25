@@ -11,17 +11,29 @@ SOLUTION_CODE_FILE    = 'solution.py'
 # HTML element names must match pl-faded-parsons.mustache:
 
 STUDENT_SOLUTION_ELT   = 'student-parsons-solution'
-UNUSED_LINES_ELT       = 'student-starter-code'
 
 
 def prepare(element_html, data):
     data['params']['random_number'] = random.random()
     return data
 
+def get_answers_name(element_html):
+    # use answers-name to namespace multiple pl-faded-parsons elements on a page
+    element = xml.fragment_fromstring(element_html)
+    answers_name = pl.get_string_attrib(element, 'answers-name', None)
+    if answers_name is not None:
+        answers_name = answers_name + '-'
+    else:
+        answers_name = ''
+    return answers_name
+
+
 def render_question_panel(element_html, data):
     """Render the panel that displays the question (from code_lines.py) and interaction boxes"""
-    html_params = {}
-    html_params["code_lines"] = read_code_lines(data, QUESTION_CODE_FILE)
+    html_params = {
+        "code_lines":  read_code_lines(data, QUESTION_CODE_FILE),
+        "answers_name": get_answers_name(element_html)
+    }
     with open(HTML_MUSTACHE_TEMPLATE, 'r') as f:
         return chevron.render(f, html_params).strip()
 
@@ -68,8 +80,8 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = xml.fragment_fromstring(element_html)
     data['score'] = 1.0
-
-    student_code = data['submitted_answers'].get(STUDENT_SOLUTION_ELT, None)
+    answers_name = get_answers_name(element_html)
+    student_code = data['submitted_answers'].get(answers_name + 'student-parsons-solution', None)
     raise Exception(f'Student starter code:\n{student_code}')
 
 
