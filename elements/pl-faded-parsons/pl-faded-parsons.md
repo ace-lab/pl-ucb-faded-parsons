@@ -45,6 +45,8 @@ page for the problem if appropriate, but it doesn't affect
 autograding.  This can be rendered, eg, as part of a
 `pl-answer-panel` or similar feedback mechanism.
 
+* `solution_notes.md` - If present, these comments/notes are displayed
+along with the reference solution.  Markdown is allowed.
 
 #### Sample element
 
