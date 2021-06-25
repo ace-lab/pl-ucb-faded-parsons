@@ -1,16 +1,19 @@
-<!-- key 'foo' of `html_params` set up in pl-faded-parsons.py is available here as {{foo}} -->
+{{! hidden form field populated with initial code; no 'name' attrib so won't be submitted }}
 
-<div class="pl-faded-parsons">  
+<input id="code-lines" type="hidden" value="{{{code_lines}}}"/>
 
-I am a faded Parsons problem to be replaced by the whole Javascripty stuff that
-draws the boxes and draggable lines of code...
-The code should be found in file code.py in serverFilesQuestion
+{{! hidden form field that will be filled up with student response right before submit }}
 
-<div class="border">
-<code><pre>
-{{#lines_array}}{{.}}
-{{/lines_array}}
-</pre></code>
-</div>
+<input name="student-solution" type="hidden" value=""/>
 
+<div class="pl-faded-parsons row mt-1">
+  <div class="col-sm-12">
+    <div class="card">
+      <div class="card-body">
+        <div id="starter-code" class="sortable-code"></div>
+        <div id="parsons-solution" class="sortable-code"></div>
+        <div style="clear:both"></div>
+      </div>
+    </div>
+  </div>
 </div>

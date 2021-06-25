@@ -1,8 +1,24 @@
 /* eslint-env jquery, browser */
 
-/* files in here may assume that jQuery is loaded */
-/* (question: at what point does THIS file get loaded??) */
+var ParsonsGlobal = {};
 
-$(function() {
-  $('.example-course-custom-element').append('<p>This text was added by a script.</p>');
-})
+/* 
+ * Initialize the widget.  Code that goes in left-hand box will be in
+ * the hidden form field  named 'code-lines'. 
+ * For now, no logging of events is done.
+ */
+ParsonsGlobal.setup = function() {
+  ParsonsGlobal.widget = new ParsonsWidget({
+    'sortableId': 'parsons-solution',
+    'onSortableUpdate': (event, ui) => {}, // normally would log this event here.
+    'trashId': 'starter-code',
+    'max_wrong_lines': 1,
+    'syntax_language': 'lang-py' // lang-rb and other choices also acceptable
+  });
+  ParsonsGlobal.widget.init($('#code-lines').val());
+  ParsonsGlobal.widget.alphabetize();  // this should depend on attribute settings
+}
+
+
+$(document).ready(ParsonsGlobal.setup);
+

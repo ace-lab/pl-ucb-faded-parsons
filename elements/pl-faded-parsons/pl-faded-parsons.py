@@ -13,7 +13,7 @@ def prepare(element_html, data):
 def render(element_html, data):
     html_params = {}
     # read all the lines of serverFilesCourse/code_lines.py into an array
-    html_params["lines_array"] = read_code_lines(data)
+    html_params["code_lines"] = read_code_lines(data)
     with open('pl-faded-parsons.mustache', 'r') as f:
         return chevron.render(f, html_params).strip()
 
@@ -48,6 +48,5 @@ def grade(element_html, data):
 #
 def read_code_lines(data):
     path = os.path.join(data["options"]["question_path"], 'serverFilesQuestion', 'code_lines.py')
-    with open(path, 'r') as f:
-        lines = [line.rstrip() for line in f.readlines()]
-    return lines
+    f = open(path, 'r')
+    return f.read()
