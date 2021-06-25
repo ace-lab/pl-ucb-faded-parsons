@@ -1,18 +1,24 @@
 /* eslint-env jquery, browser */
 
-var ParsonsGlobal = {};
+var ParsonsGlobal = {
+  indentWidth: 4
+};
 
 /*
- * Grab the lines in the starter-code box and student-solution box 
- * and stuff them into hidden HTML elements for form submission.
+ * Grab the lines in the appropriate box and stuff them into hidden HTML elements for 
+ * form submission.  We need to retrieve these by calling the Parsons JS widget, because
+ * the HTML/CSS info doesn't tell us the indentation level of each line :-(
  */
 
-ParsonsGlobal.grabListAndStuffInto = function(fromSelectors, toSelector) {
-  $(toSelector + ' li').val(
-    $(fromSelectors).
-      map(function() { return $(this).text(); }).
-      get().
-      join("\n"));
+ParsonsGlobal.grabListAndStuffInto = function(fromSelector, toSelector) {
+  var grabOneLine = function(lineObj) {
+    return(" ".repeat(lineObj.indent * ParsonsGlobal.indentWidth) + lineObj.code);
+  };
+  var theLines = ParsonsGlobal.widget.getModifiedCode('#ul-' + fromSelector);
+  var theCode = $.map(theLines, grabOneLine);
+  // put the whole newline-separated list into toSelector
+  $(toSelector).val(theCode.join("\n"));
+
 };
           
 /*
@@ -20,8 +26,8 @@ ParsonsGlobal.grabListAndStuffInto = function(fromSelectors, toSelector) {
  * by populating the hidden form fields, which will be submitted.
  */
 ParsonsGlobal.submitHandler = function() {
-  ParsonsGlobal.grabListAndStuffInto('#starter-code', '#student-starter-code');
-  ParsonsGlobal.grabListAndStuffInto('#parsons-solution', '#student-starter-code');
+  ParsonsGlobal.grabListAndStuffInto('starter-code', '#student-starter-code');
+  ParsonsGlobal.grabListAndStuffInto('parsons-solution', '#student-parsons-solution');
 }
 
 /* 
