@@ -30,6 +30,11 @@ ParsonsGlobal.submitHandler = function() {
   ParsonsGlobal.grabListAndStuffInto('parsons-solution', '#student-parsons-solution');
 }
 
+/* When blanks are filled in adjust their length */
+ParsonsGlobal.adjustBlankWidth = function() {
+  $(this).width( this.value.length.toString() + 'ch');
+}
+
 /* 
  * Initialize the widget.  Code that goes in left-hand box will be in
  * the hidden form field  named 'code-lines'. 
@@ -45,6 +50,8 @@ ParsonsGlobal.setup = function() {
   });
   ParsonsGlobal.widget.init($('#code-lines').val());
   ParsonsGlobal.widget.alphabetize();  // this should depend on attribute settings
+  // when blanks are filled, adjust their width
+  $('input.text-box').on('input', ParsonsGlobal.adjustBlankWidth);
   // when form submitted, grab the student work and put it into hidden form fields
   $('form.question-form').submit(ParsonsGlobal.submitHandler);
 };

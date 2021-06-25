@@ -138,8 +138,8 @@ li.correctPosition, .testcase.pass {
 .text-box {
     border-width: 0px;
     border-bottom: solid 1px black;
-    width:80px;
-    min-width:80px;
+    width: 3em;
+    min-width:2em;
     padding: 5px;
     font-family: monospace;
     background-color: #EFEFEF;

@@ -753,6 +753,7 @@
     }
 
     ParsonsWidget.prototype.codeLineToHTML = function(codeline) {
+      var numBlanksThisLine = 0;    
       while (codeline.code.search(/!BLANK/) >= 0) {
         var replaceText = "";
         console.log(codeline.code)
@@ -760,11 +761,13 @@
           replaceText = codeline.code.match(blankRegexp)[1].trim()
           codeline.code = codeline.code.replace(blankRegexp, "");
         }
+        inputFieldName = codeline.id.toString() + '-' + numBlanksThisLine.toString();
         codeline.code = codeline.code.replace(/!BLANK/, function() {
-          return "<input type='text' class='text-box' value=\"" + replaceText + "\" " +
-              "style = 'width: " + ((replaceText.length + 3) * 8) + 'px\'' +
-              "onkeypress=\"this.style.width = ((this.value.length + 3) * 8) + 'px';\"'/>"
+          return('<input type="text" class="text-box" ' +
+                 'name="' + inputFieldName + '" ' +
+                 'value="' + replaceText + '".>');
         });
+        numBlanksThisLine += 1;
       }
       return '<li id="' + codeline.id + '" class="prettyprint ' + this.options['syntax_language'] + ' ">' + codeline.code + '<\/li>';
     };
@@ -855,8 +858,9 @@
    };
 
 
-   window['ParsonsWidget'] = ParsonsWidget;
+  window['ParsonsWidget'] = ParsonsWidget;
  }
 // allows _ and $ to be modified with noconflict without changing the globals
 // that parsons uses
 )($,_);
+
