@@ -40,7 +40,8 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = xml.fragment_fromstring(element_html)
     data['score'] = 1.0
-    return data
+    raise Exception("Student starter code:\n" + data['raw_submitted_answers']['student-parsons-solution'])
+
 
     
 #
