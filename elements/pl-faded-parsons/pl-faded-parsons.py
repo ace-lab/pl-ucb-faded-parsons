@@ -85,11 +85,12 @@ def render_question_panel(element_html, data):
 def render_submission_panel(element_html, data):
     """Show student what they submitted"""
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers-name')
+    name = get_answers_name(element_html)
     partial_score = data['partial_scores'].get(name, {'score': None})
     score = partial_score.get('score', None)
     html_params = {
         'submission': True,
+        'code': get_student_code(element_html, data)
     }
     with open('pl-faded-parsons-submission.mustache', 'r') as f:
         return chevron.render(f, html_params).strip()
@@ -139,26 +140,26 @@ def grade(element_html, data):
 
     # at this point `student_code` is a string representing the exact submitted Python code
     # at a minimum, we have to set data['score'] to a value from 0.0...1.0
-    # test_cases = read_json_file(data, TEST_CASES_FILE)
+    test_cases = read_json_file(data, TEST_CASES_FILE)
 
-    # # run test cases
+    # run test cases
     # correct_answers = []
     # student_answers = []
-    # correct, wrong = 0, 0
-    # for index, test_case in enumerate(test_cases, 1):
-    #     test = test_case[f'case_{index}']
-    #     correct_answer = test_case[f'answer_{index}']
-    #     code_to_run = student_code + f'\nprint({test})'
-    #     student_answer = get_output(code_to_run)
-    #     correct_answers.append(correct_answer)
-    #     student_answers.append(student_answer)
-    #     if student_answer == correct_answer:
-    #         correct += 1
-    #     else:
-    #         wrong += 1
+    correct, wrong = 0, 0
+    for index, test_case in enumerate(test_cases, 1):
+        test = test_case[f'case_{index}']
+        correct_answer = test_case[f'answer_{index}']
+        code_to_run = student_code + f'\nprint({test})'
+        student_answer = get_output(code_to_run)
+        # correct_answers.append(correct_answer)
+        # student_answers.append(student_answer)
+        if student_answer == correct_answer:
+            correct += 1
+        else:
+            wrong += 1
 
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers-name')
+    name = get_answers_name(element_html)
 
     # Get weight
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
@@ -176,4 +177,4 @@ def grade(element_html, data):
     # data['correct_answers'] = correct_answers
     # data['submitted_answers'] = student_answers
     # data['score'] = (correct/(correct+wrong))
-    data['partial_scores'][name] = {'score': 0.3, 'weight': weight}
+    data['partial_scores'][name] = {'score': (correct/(correct+wrong)), 'weight': weight}
