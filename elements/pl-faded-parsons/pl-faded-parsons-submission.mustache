@@ -4,4 +4,21 @@
   <pl-code language="python">
 {{code}}
   </pl-code>
+  <p> Feedback </p>
+  <div>
+    <table style="width:100%">
+      <tr>
+        <th>Args</th>
+        <th>Your Answer</th>
+        <th>Expected Answer</th>
+      </tr>
+      {{#feedback}}
+      <tr>
+        <td>{{args}}</td>
+        <td>{{student_answer}}</td>
+        <td>{{expected}}</td>
+      </tr>
+      {{/feedback}}
+    </table>
+  </div>
 </div>

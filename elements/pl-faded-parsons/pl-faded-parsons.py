@@ -15,7 +15,7 @@ BASE_DEFAULT = 10
 QUESTION_CODE_FILE     = 'code_lines.py'
 SOLUTION_CODE_FILE    = 'solution.py'
 SOLUTION_NOTES_FILE   = 'solution_notes.md'
-TEST_CASES_FILE       = 'testcases.json'
+TEST_FILE       = 'testcases.json'
 
 def prepare(element_html, data):
     data['params']['random_number'] = random.random()
@@ -74,6 +74,12 @@ def get_output(code):
             return f'Error: {e}'
     return f.getvalue().strip()
 
+def construct_code(test_fn, args, student_code):
+    arg_str = str(args[0])
+    for i in args[1:]:
+        arg_str += ', '+str(i)
+    return student_code + f'\nprint({test_fn}(' + arg_str + '))'
+
 def render_question_panel(element_html, data):
     """Render the panel that displays the question (from code_lines.py) and interaction boxes"""
     html_params = {
@@ -90,7 +96,8 @@ def render_submission_panel(element_html, data):
     score = partial_score.get('score', None)
     html_params = {
         'submission': True,
-        'code': get_student_code(element_html, data)
+        'code': get_student_code(element_html, data),
+        'feedback': data['correct_answers'][name + 'feedback']
     }
     with open('pl-faded-parsons-submission.mustache', 'r') as f:
         return chevron.render(f, html_params).strip()
@@ -140,20 +147,37 @@ def grade(element_html, data):
 
     # at this point `student_code` is a string representing the exact submitted Python code
     # at a minimum, we have to set data['score'] to a value from 0.0...1.0
-    test_cases = read_json_file(data, TEST_CASES_FILE)
+    test = read_json_file(data, TEST_FILE)
+    test_function =  test['test_fn']
+    test_cases = test['test_cases']
+    hidden_tests = test['hidden_tests']
 
-    # run test cases
-    # correct_answers = []
-    # student_answers = []
+    # run visisble test cases
+    visible_feedback = []
     correct, wrong = 0, 0
-    for index, test_case in enumerate(test_cases, 1):
-        test = test_case[f'case_{index}']
-        correct_answer = test_case[f'answer_{index}']
-        code_to_run = student_code + f'\nprint({test})'
+    code_to_run = ''
+    for test_case in test_cases:
+        args = test_case['fn_args']
+        expected = str(test_case['expected'])
+        code_to_run = construct_code(test_function, args, student_code)
         student_answer = get_output(code_to_run)
-        # correct_answers.append(correct_answer)
-        # student_answers.append(student_answer)
-        if student_answer == correct_answer:
+        visible_feedback.append({'args':args, 'expected':expected, 'student_answer':student_answer})
+        if student_answer == expected:
+            correct += 1
+        else:
+            wrong += 1
+
+    # run hidden test cases
+    hidden_correct_answers = []
+    hidden_student_answers = []
+    for test_case in hidden_tests:
+        args = test_case['fn_args']
+        expected = str(test_case['expected'])
+        code_to_run = construct_code(test_function, args, student_code)
+        student_answer = get_output(code_to_run)
+        hidden_correct_answers.append(expected)
+        hidden_student_answers.append(student_answer)
+        if student_answer == expected:
             correct += 1
         else:
             wrong += 1
@@ -163,18 +187,5 @@ def grade(element_html, data):
 
     # Get weight
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
-    # for index in range(len(test_cases)):
-        # test = test_cases[index]
-        # correct_answer = answers[index]
-        # code_to_run = student_code + f'\nprint({test})'
-        # student_answer = get_output(code_to_run)
-        # correct_answers.append(correct_answer)
-        # student_answers.append(student_answer)
-        # if student_answer == correct_answer:
-        #     correct += 1
-        # else:
-        #     wrong += 1
-    # data['correct_answers'] = correct_answers
-    # data['submitted_answers'] = student_answers
-    # data['score'] = (correct/(correct+wrong))
+    data['correct_answers'][name + 'feedback'] = visible_feedback
     data['partial_scores'][name] = {'score': (correct/(correct+wrong)), 'weight': weight}
