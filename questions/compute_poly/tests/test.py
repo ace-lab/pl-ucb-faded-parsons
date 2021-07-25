@@ -7,16 +7,18 @@ import numpy as np
 class Test(PLTestCase):
 
     @points(1)
-    @name("Test [[10], 3]")
+    @name("testing single case")
     def test_0(self):
-        user_val = Feedback.call_user(self.st.poly, [10], 3)
-        if Feedback.check_scalar("poly([10], 3)", self.ref.poly([10], 3), user_val):
-            Feedback.set_score(1)
-        else:
-            Feedback.set_score(0)
+        case = [[10], 3]
+        points = 0
+        user_val = Feedback.call_user(self.st.poly, *case)
+        ref_val = self.ref.poly(*case)
+        if Feedback.check_scalar(f"args: {case}", ref_val, user_val):
+            points += 1
+        Feedback.set_score(points)
 
     @points(4)
-    @name("testing multiple")
+    @name("testing multiple cases")
     def test_1(self):
         cases = [
             [[4, 5], 2],
