@@ -5,6 +5,7 @@ import random
 import chevron
 import os
 import base64
+import markdown
 
 QUESTION_CODE_FILE     = 'code_lines.py'
 SOLUTION_CODE_FILE    = 'solution.py'
@@ -49,6 +50,10 @@ def get_student_code(element_html, data):
 def base64_encode(s):
     return base64.b64encode(s.encode("ascii")).decode("ascii")
 
+def render_markdown(text):
+    html = markdown.markdown(text)
+    return html
+
 def render_question_panel(element_html, data):
     """Render the panel that displays the question (from code_lines.py) and interaction boxes"""
     html_params = {
@@ -69,7 +74,8 @@ def render_submission_panel(element_html, data):
 def render_answer_panel(element_html, data):
     """Show the instructor's reference solution"""
     html_params = {
-        "notes": read_file_lines(data, SOLUTION_NOTES_FILE, error_if_not_found=False)
+        "solution_path": "tests/ans.py",
+        # "notes": render_markdown(read_file_lines(data, SOLUTION_NOTES_FILE, error_if_not_found=False))
     }
     with open('pl-faded-parsons-answer.mustache', 'r') as f:
         return chevron.render(f, html_params).strip()

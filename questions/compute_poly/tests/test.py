@@ -32,4 +32,4 @@ class Test(PLTestCase):
             ref_val = self.ref.poly(*case)
             if Feedback.check_scalar(f"args: {case}", ref_val, user_val):
                 points += 1
-        Feedback.set_score(points)
+        Feedback.set_score(points/len(cases))
