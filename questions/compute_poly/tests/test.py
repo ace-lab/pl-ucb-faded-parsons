@@ -30,6 +30,30 @@ class Test(PLTestCase):
         for case in cases:
             user_val = Feedback.call_user(self.st.poly, *case)
             ref_val = self.ref.poly(*case)
-            if Feedback.check_scalar(f"args: {case}", ref_val, user_val):
+            if Feedback.check_scalar(name=f"args: {case}", ref=ref_val, data=user_val, report_success=False, report_failure=False):
                 points += 1
+                Feedback.add_feedback('Well Done')
+            else:
+                Feedback.add_feedback('Whoops!')
+            Feedback.add_feedback(f'Your answer: {user_val}\nReference Answer: {ref_val}')
+
+        Feedback.set_score(points/len(cases))
+
+    @points(3)
+    @name("testing hidden cases")
+    def test_2(self):
+        cases = [
+            [[10], 3],
+            [[6,5,4,3,2,1], 7],
+            [[1,2,3,4,5,6], 8],
+        ]
+        points = 0
+        for case in cases:
+            user_val = Feedback.call_user(self.st.poly, *case)
+            ref_val = self.ref.poly(*case)
+            if Feedback.check_scalar(name=f"hidden case", ref=ref_val, data=user_val, report_success=False, report_failure=False):
+                points += 1
+                Feedback.add_feedback('Check')
+            else:
+                Feedback.add_feedback('Wrong')
         Feedback.set_score(points/len(cases))
