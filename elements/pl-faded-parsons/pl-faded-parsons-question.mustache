@@ -13,3 +13,25 @@
   <div id="{{answers_name}}starter-code"     class="col-sm-6 border px-1 sortable-code"></div>
   <div id="{{answers_name}}parsons-solution" class="col-sm-6 border sortable-code"></div>
 </div>
+
+<script>
+  function populate(){
+    {{#populate_info}}
+    document.forms['question-form']['{{name}}'].value = '{{value}}'
+    console.log('pop', '{{name}}', '{{value}}')
+    console.log(document.forms['question-form']['{{name}}'])
+    {{/populate_info}}
+  }
+
+  var check = setInterval(function() {
+    {{#populate_info}}
+    var exists = document.forms['question-form']['{{name}}'];
+    if (exists) {
+        clearInterval(check);
+        document.forms['question-form']['{{name}}'].value = '{{value}}'
+    }
+    {{/populate_info}}
+  }, 25);
+
+
+</script>

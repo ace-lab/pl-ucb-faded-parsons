@@ -56,8 +56,13 @@ def render_markdown(text):
 
 def render_question_panel(element_html, data):
     """Render the panel that displays the question (from code_lines.py) and interaction boxes"""
+    blanks = []
+    for blank in data['submitted_answers']:
+        if blank[0:24] == 'parsons-solutioncodeline':
+            blanks.append({'name': blank, 'value': data['submitted_answers'][blank]})
     html_params = {
         "code_lines":  read_file_lines(data, QUESTION_CODE_FILE),
+        "populate_info": blanks
     }
     with open('pl-faded-parsons-question.mustache', 'r') as f:
         return chevron.render(f, html_params).strip()
@@ -73,9 +78,12 @@ def render_submission_panel(element_html, data):
 
 def render_answer_panel(element_html, data):
     """Show the instructor's reference solution"""
+    answers_name = get_answers_name(element_html)
+    code = data['submitted_answers'].get(answers_name + 'code-lines', None)
     html_params = {
         "solution_path": "tests/ans.py",
         # "notes": render_markdown(read_file_lines(data, SOLUTION_NOTES_FILE, error_if_not_found=False))
+        "notes": data,
     }
     with open('pl-faded-parsons-answer.mustache', 'r') as f:
         return chevron.render(f, html_params).strip()
