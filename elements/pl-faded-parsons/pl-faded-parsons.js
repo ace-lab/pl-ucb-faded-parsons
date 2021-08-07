@@ -6,6 +6,23 @@ var ParsonsGlobal = {
    * For now we only submit the actual code, NOT the original metadata of where the blanks were etc.
    */
   submitHandler: function() {
+    var starterCode = $("#ul-starter-code li");
+    const starterElements = [];
+    starterCode.each(function(idx, li) {
+        var id = $(li).attr('id');
+        var indent = $(li).css('margin-left');
+        starterElements.push({'id': id, 'indent': indent, 'index': idx})
+    });
+    $('#starter-code-order').val(JSON.stringify(starterElements));
+
+    var solutionCode = $("#ul-parsons-solution li");
+    const solutionElements = [];
+    solutionCode.each(function(idx, li) {
+        var id = $(li).attr('id');
+        var indent = $(li).css('margin-left');
+        solutionElements.push({'id': id, 'indent': indent, 'index': idx})
+    });
+    $('#parsons-solution-order').val(JSON.stringify(solutionElements));
     $('#student-parsons-solution').val(ParsonsGlobal.widget.solutionCode()[0]);
   },
 
@@ -14,9 +31,9 @@ var ParsonsGlobal = {
     $(this).width( this.value.length.toString() + 'ch');
   },
 
-  /* 
+  /*
    * Initialize the widget.  Code that goes in left-hand box will be in
-   * the hidden form field  named 'code-lines'. 
+   * the hidden form field  named 'code-lines'.
    * For now, no logging of events is done.
    */
   setup: function() {
