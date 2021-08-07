@@ -1,5 +1,6 @@
 def poly(coeffs, x): #0given
-total = !BLANK
-for power, coeff in enumerate(!BLANK): #1given
-total = !BLANK + !BLANK * (x ** power)
+total = 0 #1given
+for power, coeff in enumerate(coeffs): #1given
+print(total) #2given
+total = total + coeff * (x ** power) #2given
 return total #1given
