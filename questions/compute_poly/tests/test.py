@@ -4,6 +4,7 @@ from code_feedback import Feedback
 from unittest import mock
 from io import StringIO
 import numpy as np
+from random import randrange
 
 
 class Test(PLTestCase):
@@ -84,4 +85,27 @@ class Test(PLTestCase):
                     Feedback.add_feedback(f"stdout\n---------\n{mock_stdout.getvalue()}---------")
                 except Exception as e:
                     Feedback.add_feedback(f"error: {e}")
+        Feedback.set_score(points/len(cases))
+
+    @points(20)
+    @name("testing random cases")
+    def test_4(self):
+        cases = []
+        num_cases = 20
+        for case in range(num_cases):
+            coeffs = []
+            for i in range(10):
+                coeffs.append(randrange(0, 101))
+            x = randrange(0, 10)
+            cases.append([coeffs, x])
+        points = 0
+        for case in cases:
+            user_val = Feedback.call_user(self.st.poly, *case)
+            ref_val = self.ref.poly(*case)
+            if Feedback.check_scalar(name=f"args: {case}", ref=ref_val, data=user_val, report_success=True, report_failure=True):
+                points += 1
+                Feedback.add_feedback('Well Done')
+            else:
+                Feedback.add_feedback('Whoops!')
+            Feedback.add_feedback(f'Your answer: {user_val}\nReference Answer: {ref_val}')
         Feedback.set_score(points/len(cases))
