@@ -117,9 +117,11 @@ def parse(element_html, data):
     # only Python problems are allowed right now (lang MUST be "py")
     lang = pl.get_string_attrib(element, 'language')
 
+    file_name = pl.get_string_attrib(element, 'file-name', 'user_code.py')
+
     _files = [
         {
-            "name": "user_code.py",
+            "name": file_name,
             "contents": base64_encode(get_student_code(element_html, data))
         }
     ]

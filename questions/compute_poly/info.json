@@ -4,7 +4,6 @@
   "topic": "",
   "tags": ["berkeley", "fp"],
   "type": "v3",
-  "singleVariant": true,
   "gradingMethod": "External",
   "externalGradingOptions": {
       "enabled": true,
