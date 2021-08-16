@@ -8,7 +8,6 @@ import base64
 import markdown
 import json
 
-QUESTION_CODE_FILE     = 'code_lines.py'
 SOLUTION_CODE_FILE    = 'solution.py'
 SOLUTION_NOTES_FILE   = 'solution_notes.md'
 
@@ -56,7 +55,7 @@ def render_markdown(text):
     return html
 
 def render_question_panel(element_html, data):
-    """Render the panel that displays the question (from code_lines.py) and interaction boxes"""
+    element = lxml.html.fragment_fromstring(element_html)
     populate_info = []
     for blank in data['submitted_answers']:
         if blank[0:24] == 'parsons-solutioncodeline':
@@ -66,7 +65,7 @@ def render_question_panel(element_html, data):
     solution_order_info = json.loads(data['submitted_answers']['parsons-solution-order']) if 'parsons-solution-order' in data['submitted_answers'] else []
 
     html_params = {
-        "code_lines":  read_file_lines(data, QUESTION_CODE_FILE),
+        "code_lines":  str(element.text),
         "populate_info": populate_info,
         "student_order_info": student_order_info,
         "solution_order_info": solution_order_info,
