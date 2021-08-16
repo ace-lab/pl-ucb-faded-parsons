@@ -114,7 +114,7 @@ def parse(element_html, data):
     # `element` is now an XML data structure - see docs for LXML library at lxml.de
 
     # only Python problems are allowed right now (lang MUST be "py")
-    lang = pl.get_string_attrib(element, 'language')
+    # lang = pl.get_string_attrib(element, 'language')
 
     file_name = pl.get_string_attrib(element, 'file-name', 'user_code.py')
 
