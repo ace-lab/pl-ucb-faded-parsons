@@ -1,0 +1,13 @@
+{
+  "uuid": "be987220-ca54-11eb-a3a2-acde48001125",
+  "title": "Determinant Faded Parsons Example",
+  "topic": "",
+  "tags": ["berkeley", "fp"],
+  "type": "v3",
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+      "enabled": true,
+      "image": "prairielearn/grader-python",
+      "entrypoint": "/python_autograder/run.sh"
+  }
+}
