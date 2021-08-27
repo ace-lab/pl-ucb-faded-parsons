@@ -1,6 +1,6 @@
 from typing import *
 from re import compile, finditer, match as test
-from sys import argv, stderr
+from sys import argv
 from os import makedirs, path, PathLike
 from shutil import copyfile
 from uuid import uuid4
