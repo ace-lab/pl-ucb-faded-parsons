@@ -1,7 +1,8 @@
 from typing import *
 import re
 from sys import argv
-from os import path, PathLike, mkdir
+from os import makedirs, path, PathLike
+from shutil import copyfile
 
 """ Matches, with precedence in listed order:
     - capture group 0
@@ -111,13 +112,34 @@ def generate_question_html(prompt_code: str, tab='  ') -> str:
 </pl-faded-parsons>
 """.format(tab=tab, indented=indented).strip()
 
-def filename(path: PathLike[AnyStr]) -> AnyStr:
+def filename(file_path: PathLike[AnyStr]) -> AnyStr:
     """Returns the basename in the path without the file extensions"""
-    return path.splitext(path.basename(path))[0]
+    return path.splitext(path.basename(file_path))[0]
 
-def setup_fpp_question(root_dir_name: PathLike[AnyStr], prompt_code: str, answer_code: str):
-    mkdir(root_dir_name)
-    test_dir = path.join(root_dir_name, 'tests')
+def generate_fpp_question(source_path: PathLike[AnyStr]):
+    """ Takes a path of a well-formatted source (see `extract_prompt_ans`),
+        then generates and populates a question directory of the same name.
+    """
+    with open(source_path, 'r') as source:
+        source_code = ''.join(source)
+        prompt_code, answer_code = extract_prompt_ans(source_code)
+    
+    question_name = filename(source_path)
+
+    test_dir = path.join(question_name, 'tests')
+    makedirs(test_dir, exist_ok=True)
+
+    copyfile(source_path, path.join(question_name, 'source.py'))
+    
+    with open(path.join(test_dir, 'ans.py'), 'w+') as f:
+        f.write(answer_code)
+    
+    with open(path.join(question_name, 'question.html'), 'w+') as f:
+        question_html = generate_question_html(prompt_code)
+        f.write(question_html)
+    
+    with open(path.join(question_name, 'info.json'), 'w+') as f:
+        f.write('{}\n')
 
 
 if __name__ == '__main__':
@@ -125,14 +147,12 @@ if __name__ == '__main__':
         raise Exception('Please provide a source code path as a first CLI argument')
     
     source_path = argv[1]
-    
-    with open(source_path, 'r') as source:
-        source_code = ''.join(source)
-        prompt_code, answer_code = extract_prompt_ans(source_code)
-        question_html = generate_question_html(prompt_code)
-        print(question_html, answer_code, sep="\n\n ▲prompt▲ --- ▼answer▼ \n\n")
 
-    print()
+    print('Generating from source', source_path, '...')    
+
+    generate_fpp_question(source_path)
+
+    print('Done.')
 
 
         
