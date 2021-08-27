@@ -1,7 +1,7 @@
 from typing import *
 import re
 from sys import argv
-from os import makedirs, path, PathLike
+from os import makedirs, path, PathLike, write
 from shutil import copyfile
 from uuid import uuid4
 from json import dumps
@@ -122,48 +122,99 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
     """ Takes a path of a well-formatted source (see `extract_prompt_ans`),
         then generates and populates a question directory of the same name.
     """
+    print('- Extracting from source...')
     with open(source_path, 'r') as source:
         source_code = ''.join(source)
         prompt_code, answer_code = extract_prompt_ans(source_code)
     
-    question_name = filename(source_path)
+    question_dir = filename(source_path)
 
-    test_dir = path.join(question_name, 'tests')
+    print('- Creating destination directories')
+    test_dir = path.join(question_dir, 'tests')
     makedirs(test_dir, exist_ok=True)
 
-    copyfile(source_path, path.join(question_name, 'source.py'))
-    
-    with open(path.join(test_dir, 'ans.py'), 'w+') as f:
-        f.write(answer_code)
-    
-    with open(path.join(test_dir, 'setup_code.py'), 'w+') as f:
-        f.write('# AUTO-GENERATED FILE \n')
-    
-    with open(path.join(question_name, 'question.html'), 'w+') as f:
-        question_html = generate_question_html(prompt_code)
-        f.write(question_html)
-    
-    with open(path.join(question_name, 'info.json'), 'w+') as f:
-        question_title = question_name
-        
-        if question_title:
-            question_title = ' '.join(l.capitalize() for l in question_title.split('_'))
-        
-        info_json = {
-            'uuid': uuid4().hex,
-            'title': question_title,
-            'topic': '',
-            'tags': ['berkeley', 'fp'],
-            'type': 'v3',
-            'gradingMethod': 'External',
-            'externalGradingOptions': {
-                'enabled': True,
-                'image': 'prairielearn/grader-python',
-                'entrypoint': '/python_autograder/run.sh'
-            }
-        }
+    print('- Copying source file...')
+    copyfile(source_path, path.join(question_dir, 'source.py'))
 
-        f.write(dumps(info_json, indent=4) + '\n')
+    def write_to_dir(file_path: PathLike[AnyStr], data: AnyStr):
+        with open(file_path, 'w+') as f:
+            f.write(data)
+
+    def write_to_question_dir(file_name: PathLike[AnyStr], data: AnyStr):
+        write_to_dir(path.join(question_dir, file_name), data)
+
+    def write_to_test_dir(file_name: PathLike[AnyStr], data: AnyStr):
+        write_to_dir(path.join(test_dir, file_name), data)
+    
+    print('- Populating test directory...')
+    write_to_test_dir('ans.py', answer_code)
+    
+    write_to_test_dir('setup_code.py', '# AUTO-GENERATED FILE\n')
+
+    write_to_test_dir('test.py', """# AUTO-GENERATED FILE
+from pl_helpers import name, points
+from pl_unit_test import PLTestCase
+from code_feedback import Feedback
+
+
+class Test(PLTestCase):
+    @points(1)
+    @name("test 0")
+    def test_0(self):
+        points = 0
+        # ex: calling a student defined function det 
+        #     with args=(1, 2, 3, 4)
+        # case = [1, 2, 3, 4]
+        # user_val = Feedback.call_user(self.st.det, *case)
+
+        # ex: calling a function defined in ans.py called det
+        #     with the same arguments
+        # ref_val = self.ref.det(*case)
+
+        # ex: test correctness, update points
+        # if Feedback.check_scalar('case: ' + case, ref_val, user_val):
+        #     points += 1
+        
+        Feedback.set_score(points)\n""")
+    
+    print('- Populating {} directory...'.format(question_dir))
+    write_to_question_dir('question.html', generate_question_html(prompt_code))
+
+    write_to_question_dir('server.py',  """# AUTO-GENERATED FILE
+def generate(data):
+    # Define incoming variables here
+    names_for_user = [
+        # ex: student recieves a matrix m
+        # {"name": "m", "description": "a 2x2 matrix", "type": "numpy array"}
+    ]
+    # Define outgoing variables here
+    names_from_user = [
+        # ex: student defines a determinant function name det
+        # {"name": "det", "description": "determinant for a 2x2 matrix", "type": "python function"}
+    ]
+
+    data["params"]["names_for_user"] = names_for_user
+    data["params"]["names_from_user"] = names_from_user
+
+    return data\n""")
+    
+    question_title = ' '.join(l.capitalize() for l in question_dir.split('_'))
+    
+    info_json = {
+        'uuid': uuid4().hex,
+        'title': question_title,
+        'topic': '',
+        'tags': ['berkeley', 'fp'],
+        'type': 'v3',
+        'gradingMethod': 'External',
+        'externalGradingOptions': {
+            'enabled': True,
+            'image': 'prairielearn/grader-python',
+            'entrypoint': '/python_autograder/run.sh'
+        }
+    }
+
+    write_to_question_dir('info.json', dumps(info_json, indent=4) + '\n')
 
 
 if __name__ == '__main__':
@@ -172,7 +223,7 @@ if __name__ == '__main__':
     
     source_path = argv[1]
 
-    print('Generating from source', source_path, '...')    
+    print('Generating from source', source_path)    
 
     generate_fpp_question(source_path)
 
