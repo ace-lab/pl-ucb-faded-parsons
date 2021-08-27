@@ -201,7 +201,7 @@ def generate(data):
     question_title = ' '.join(l.capitalize() for l in question_dir.split('_'))
     
     info_json = {
-        'uuid': uuid4().hex,
+        'uuid': str(uuid4()),
         'title': question_title,
         'topic': '',
         'tags': ['berkeley', 'fp'],

@@ -4,7 +4,7 @@ def poly(coeffs, x): #0given
     total = ?0 + 0?
     
     # Extract the power and coefficient for each term.
-    for power, coeff in enumerate(coeffs): #2given
+    for power, coeff in enumerate(coeffs):
         # Add the value of the term to the total.
-        ?total? = total + coeff * (x ** power)
+        ?total? = total + coeff * (x ** power) #2given
     return total #1given
