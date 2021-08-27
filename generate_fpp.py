@@ -1,6 +1,6 @@
 from typing import *
 from re import compile, finditer, match as test
-from sys import argv
+from sys import argv, stderr
 from os import makedirs, path, PathLike
 from shutil import copyfile
 from uuid import uuid4
@@ -215,7 +215,7 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
     """ Takes a path of a well-formatted source (see `extract_prompt_ans`),
         then generates and populates a question directory of the same name.
     """
-    print('Generating from source', source_path) 
+    print('\033[94mGenerating from source', source_path, '\033[0m') 
 
     print('- Extracting from source...')
     with open(source_path, 'r') as source:
@@ -257,11 +257,21 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
     write_to(test_dir, 'test.py', TEST_FILE_TEXT)
     
 
-    print('Done.')
+    print('\033[92mDone.\033[0m')
 
 
 if __name__ == '__main__':
     if len(argv) < 2:
         raise Exception('Please provide a source code path as a first CLI argument')
-       
-    generate_fpp_question(source_path = argv[1])
+   
+    source_path = argv[1]
+   
+    if not path.exists(source_path):
+        original = source_path
+        source_path = path.join('questions', source_path)
+        if not path.exists(source_path):
+            raise FileNotFoundError('Could not find file at {} or {}.'.format(original, source_path))
+        else:
+            print('\033[93m - Could not find {} in current directory. Proceeding with detected file. - \033[0m'.format(original))
+
+    generate_fpp_question(source_path)
