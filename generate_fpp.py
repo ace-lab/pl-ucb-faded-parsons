@@ -219,12 +219,13 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
     question_name = filename(source_path)
     question_dir = path.join(path.dirname(source_path), question_name)
 
-    print('- Creating destination directories')
+    print('- Creating destination directories...')
     test_dir = path.join(question_dir, 'tests')
     makedirs(test_dir, exist_ok=True)
 
-    print('- Copying source file...')
-    copyfile(source_path, path.join(question_dir, 'source.py'))
+    copy_dest_path = path.join(question_dir, 'source.py')
+    print('- Copying {} to {} ...'.format(path.basename(source_path), copy_dest_path))
+    copyfile(source_path, copy_dest_path)
 
     def write_to_dir(file_path: PathLike[AnyStr], data: AnyStr):
         with open(file_path, 'w+') as f:
@@ -235,18 +236,9 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
 
     def write_to_test_dir(file_name: PathLike[AnyStr], data: AnyStr):
         write_to_dir(path.join(test_dir, file_name), data)
-    
-    ### /{question_name}/test ###
-    print('- Populating test directory...')
 
-    write_to_test_dir('ans.py', answer_code)
-    
-    write_to_test_dir('setup_code.py', SETUP_CODE_FILE_TEXT)
-
-    write_to_test_dir('test.py', TEST_FILE_TEXT)
-
-    ### /{question_name}/ ######    
-    print('- Populating {} directory...'.format(question_dir))
+    ### /{question_name}/ ########    
+    print('- Populating {} ...'.format(question_dir))
     
     question_html = generate_question_html(prompt_code, question_text=question_text)
     write_to_question_dir('question.html', question_html)
@@ -254,6 +246,15 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
     write_to_question_dir('info.json', generate_info_json(question_name))
 
     write_to_question_dir('server.py',  SERVER_FILE_TEXT)
+    
+    ### /{question_name}/test/ ###
+    print('- Populating {} ...'.format(test_dir))
+
+    write_to_test_dir('ans.py', answer_code)
+    
+    write_to_test_dir('setup_code.py', SETUP_CODE_FILE_TEXT)
+
+    write_to_test_dir('test.py', TEST_FILE_TEXT)
 
 
 if __name__ == '__main__':
