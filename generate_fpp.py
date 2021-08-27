@@ -1,7 +1,7 @@
 from typing import *
 import re
 from sys import argv
-from os import makedirs, path, PathLike, write
+from os import makedirs, path, PathLike
 from shutil import copyfile
 from uuid import uuid4
 from json import dumps
@@ -32,6 +32,8 @@ class Test(PLTestCase):
         
         Feedback.set_score(points)\n"""
 
+SETUP_CODE_FILE_TEXT = '# AUTO-GENERATED FILE\n'
+
 SERVER_FILE_TEXT = """# AUTO-GENERATED FILE
 def generate(data):
     # Define incoming variables here
@@ -50,22 +52,21 @@ def generate(data):
 
     return data\n"""
 
-""" Matches, with precedence in listed order:
-    - capture group 0
-        - (one-line) comments (excluding the line-break terminator)
-    - capture group 1
-        - (multi-line) triple-quote string literals
-    - capture group 2
-        - (one-line) single-apostrophe string literals
-        - (one-line) single-quote string literals
-    - capture group 3
-        - (one-line) answer surrounded by ?'s (excluding the ?'s)
-"""
+# Matches, with precedence in listed order:
+# - capture group 0
+#     - (one-line) comments (excluding the line-break terminator)
+# - capture group 1
+#     - (multi-line) triple-quote string literals
+# - capture group 2
+#     - (one-line) single-apostrophe string literals
+#     - (one-line) single-quote string literals
+# - capture group 3
+#     - (one-line) answer surrounded by ?'s (excluding the ?'s)
 MAIN_PATTERN = re.compile(r'(\#.*?)(?=\r?\n)|(\"\"\"[\s\S]*?\"\"\")|(\'.*?\'|\".*?\")|\?(.*?)\?')
 
 SPECIAL_COMMENT_PATTERN = re.compile(r'^#\d+given')
 
-BLANK_SUBSTITUTE = "!BLANK"
+BLANK_SUBSTITUTE = '!BLANK'
 
 def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) -> Tuple[str, str, str]:
     """ Extracts from one well-formatted `source_code` string the text for:
@@ -180,6 +181,28 @@ def generate_question_html(prompt_code: str, question_text: str = None, tab='  '
 {tab}{indented}
 </pl-faded-parsons>""".format(question_text=question_text, tab=tab, indented=indented)
 
+def generate_info_json(question_name: str, indent=4) -> str:
+    """ Creates the default info.json for a new FPP question, with a unique v4 UUID.
+        Expects `question_name` to be lower snake case.
+    """
+    question_title = ' '.join(l.capitalize() for l in question_name.split('_'))
+
+    info_json = {
+        'uuid': str(uuid4()),
+        'title': question_title,
+        'topic': '',
+        'tags': ['berkeley', 'fp'],
+        'type': 'v3',
+        'gradingMethod': 'External',
+        'externalGradingOptions': {
+            'enabled': True,
+            'image': 'prairielearn/grader-python',
+            'entrypoint': '/python_autograder/run.sh'
+        }
+    }
+
+    return dumps(info_json, indent=indent) + '\n'
+
 def filename(file_path: PathLike[AnyStr]) -> AnyStr:
     """Returns the basename in the path without the file extensions"""
     return path.splitext(path.basename(file_path))[0]
@@ -193,7 +216,8 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
         source_code = ''.join(source)
         question_text, prompt_code, answer_code = extract_prompt_ans(source_code)
     
-    question_dir = filename(source_path)
+    question_name = filename(source_path)
+    question_dir = path.join(path.dirname(source_path), question_name)
 
     print('- Creating destination directories')
     test_dir = path.join(question_dir, 'tests')
@@ -212,33 +236,22 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
     def write_to_test_dir(file_name: PathLike[AnyStr], data: AnyStr):
         write_to_dir(path.join(test_dir, file_name), data)
     
+    ### /{question_name}/test ###
     print('- Populating test directory...')
+
     write_to_test_dir('ans.py', answer_code)
     
-    write_to_test_dir('setup_code.py', '# AUTO-GENERATED FILE\n')
+    write_to_test_dir('setup_code.py', SETUP_CODE_FILE_TEXT)
 
     write_to_test_dir('test.py', TEST_FILE_TEXT)
-    
+
+    ### /{question_name}/ ######    
     print('- Populating {} directory...'.format(question_dir))
     
     question_html = generate_question_html(prompt_code, question_text=question_text)
     write_to_question_dir('question.html', question_html)
     
-    question_title = ' '.join(l.capitalize() for l in question_dir.split('_'))
-    info_json = {
-        'uuid': str(uuid4()),
-        'title': question_title,
-        'topic': '',
-        'tags': ['berkeley', 'fp'],
-        'type': 'v3',
-        'gradingMethod': 'External',
-        'externalGradingOptions': {
-            'enabled': True,
-            'image': 'prairielearn/grader-python',
-            'entrypoint': '/python_autograder/run.sh'
-        }
-    }
-    write_to_question_dir('info.json', dumps(info_json, indent=4) + '\n')
+    write_to_question_dir('info.json', generate_info_json(question_name))
 
     write_to_question_dir('server.py',  SERVER_FILE_TEXT)
 
@@ -254,6 +267,3 @@ if __name__ == '__main__':
     generate_fpp_question(source_path)
 
     print('Done.')
-
-
-        
