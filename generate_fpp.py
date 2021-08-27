@@ -3,7 +3,7 @@ import re
 
 """ Matches, with precedence in listed order:
     - capture group 0
-        - (one-line) comments (including the line-break terminator)
+        - (one-line) comments (excluding the line-break terminator)
     - capture group 1
         - (one-line) single-apostrophe string literals
         - (multi-line) triple-quote string literals
@@ -11,7 +11,9 @@ import re
     - capture group 2
         - (one-line) answer surrounded by ?'s (excluding the ?'s)
 """
-PATTERN = re.compile(r'(\#.*?\r?\n)|(\'.*?\'|\"\"\"[\s\S]*?\"\"\"|\".*?\")|\?(.*?)\?')
+MAIN_PATTERN = re.compile(r'(\#.*?)(?=\r?\n)|(\'.*?\'|\"\"\"[\s\S]*?\"\"\"|\".*?\")|\?(.*?)\?')
+
+SPECIAL_COMMENT_PATTERN = re.compile(r'^#\d+given')
 
 BLANK_SUBSTITUTE = "!BLANK"
 
@@ -24,25 +26,27 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
         
         Note: Empty lines are always stripped from the prompt. Comments are
         also removed by default, but setting `keep_comments_in_prompt` to True 
-        will keep them in.
+        will keep them in. Special comments of the kind `#{n}given` are always
+        left inthe prompt and always removed from the answer.
             
         e.g.
         ```
-        > source = "sum = lambda a, b: ?a + b?"
+        > source = "sum = lambda a, b: ?a + b? #0given"
         > extract_prompt_ans(source)
-        ("sum = lambda a, b: !BLANK", "sum = lambda a, b: a + b")
+        ("sum = lambda a, b: !BLANK #0given", "sum = lambda a, b: a + b")
 
-        > source = "?del bad?  # What's going on?!?"
+        > source = "?del bad?  # badness?!?"
         > extract_prompt_ans(source)
-        ("!BLANK", "del bad  # What's going on?!?!")
-        ```"""
+        ("!BLANK", "del bad  # badness?!?!")
+        ```
+    """
     prompt_code = ''
     answer_code = ''
 
     # (exclusive) end of the last match
     last_end = 0
 
-    for match in re.finditer(PATTERN, source_code):
+    for match in re.finditer(MAIN_PATTERN, source_code):
         start, end = match.span()
        
         # make sure to keep uncaptured text between matches
@@ -57,13 +61,16 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
         comment, string, blank_ans = match.groups()
         
         if comment:
-            # add comment to answer code, and maybe prompt_code
-            answer_code += comment
-            
-            # even if excluding the comment from the prompt,
-            # every comment ends with a '\n'.
-            # must keep it to maintain whitespacing
-            prompt_code += comment if keep_comments_in_prompt else '\n'
+            special_comment = re.match(SPECIAL_COMMENT_PATTERN, comment)
+
+            if not special_comment:
+                answer_code += comment
+
+            if special_comment or keep_comments_in_prompt:
+                # even if excluding the comment from the prompt,
+                # every comment ends with a '\n'.
+                # must keep it to maintain whitespacing
+                prompt_code += comment
         elif string:
             # strings always stay in both
             prompt_code += string
@@ -72,6 +79,8 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
             # fill in proper blank text
             prompt_code += BLANK_SUBSTITUTE
             answer_code += blank_ans
+        else:
+            raise Exception('All capture groups are None after', last_end)
 
     # don't forget everything after the last match!
     unmatched = source_code[last_end:]
