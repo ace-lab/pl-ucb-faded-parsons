@@ -3,6 +3,8 @@ import re
 from sys import argv
 from os import makedirs, path, PathLike
 from shutil import copyfile
+from uuid import uuid4
+from json import dumps
 
 """ Matches, with precedence in listed order:
     - capture group 0
@@ -134,12 +136,34 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
     with open(path.join(test_dir, 'ans.py'), 'w+') as f:
         f.write(answer_code)
     
+    with open(path.join(test_dir, 'setup_code.py'), 'w+') as f:
+        f.write('# AUTO-GENERATED FILE \n')
+    
     with open(path.join(question_name, 'question.html'), 'w+') as f:
         question_html = generate_question_html(prompt_code)
         f.write(question_html)
     
     with open(path.join(question_name, 'info.json'), 'w+') as f:
-        f.write('{}\n')
+        question_title = question_name
+        
+        if question_title:
+            question_title = ' '.join(l.capitalize() for l in question_title.split('_'))
+        
+        info_json = {
+            'uuid': uuid4().hex,
+            'title': question_title,
+            'topic': '',
+            'tags': ['berkeley', 'fp'],
+            'type': 'v3',
+            'gradingMethod': 'External',
+            'externalGradingOptions': {
+                'enabled': True,
+                'image': 'prairielearn/grader-python',
+                'entrypoint': '/python_autograder/run.sh'
+            }
+        }
+
+        f.write(dumps(info_json, indent=4) + '\n')
 
 
 if __name__ == '__main__':
