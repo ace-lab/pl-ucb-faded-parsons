@@ -1,3 +1,8 @@
+"""Write a function <code>poly</code> that calculates the values of a 
+polynomial with the given coefficients at the given value of <code>x</code>,
+ie, evaluate $$f(x) = \sum_i \textrm{coeffs}_i ~ x^i$$"""
+
+
 def poly(coeffs, x): #0given
     # Keep track of the total as we iterate through each term.
     # Each term is of the form coeff*(x**power).

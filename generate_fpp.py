@@ -6,50 +6,104 @@ from shutil import copyfile
 from uuid import uuid4
 from json import dumps
 
+TEST_FILE_TEXT = """# AUTO-GENERATED FILE
+from pl_helpers import name, points
+from pl_unit_test import PLTestCase
+from code_feedback import Feedback
+
+
+class Test(PLTestCase):
+    @points(1)
+    @name("test 0")
+    def test_0(self):
+        points = 0
+        # ex: calling a student defined function det 
+        #     with args=(1, 2, 3, 4)
+        # case = [1, 2, 3, 4]
+        # user_val = Feedback.call_user(self.st.det, *case)
+
+        # ex: calling a function defined in ans.py called det
+        #     with the same arguments
+        # ref_val = self.ref.det(*case)
+
+        # ex: test correctness, update points
+        # if Feedback.check_scalar('case: ' + case, ref_val, user_val):
+        #     points += 1
+        
+        Feedback.set_score(points)\n"""
+
+SERVER_FILE_TEXT = """# AUTO-GENERATED FILE
+def generate(data):
+    # Define incoming variables here
+    names_for_user = [
+        # ex: student recieves a matrix m
+        # {"name": "m", "description": "a 2x2 matrix", "type": "numpy array"}
+    ]
+    # Define outgoing variables here
+    names_from_user = [
+        # ex: student defines a determinant function name det
+        # {"name": "det", "description": "determinant for a 2x2 matrix", "type": "python function"}
+    ]
+
+    data["params"]["names_for_user"] = names_for_user
+    data["params"]["names_from_user"] = names_from_user
+
+    return data\n"""
+
 """ Matches, with precedence in listed order:
     - capture group 0
         - (one-line) comments (excluding the line-break terminator)
     - capture group 1
-        - (one-line) single-apostrophe string literals
         - (multi-line) triple-quote string literals
-        - (one-line) single-quote string literals
     - capture group 2
+        - (one-line) single-apostrophe string literals
+        - (one-line) single-quote string literals
+    - capture group 3
         - (one-line) answer surrounded by ?'s (excluding the ?'s)
 """
-MAIN_PATTERN = re.compile(r'(\#.*?)(?=\r?\n)|(\'.*?\'|\"\"\"[\s\S]*?\"\"\"|\".*?\")|\?(.*?)\?')
+MAIN_PATTERN = re.compile(r'(\#.*?)(?=\r?\n)|(\"\"\"[\s\S]*?\"\"\")|(\'.*?\'|\".*?\")|\?(.*?)\?')
 
 SPECIAL_COMMENT_PATTERN = re.compile(r'^#\d+given')
 
 BLANK_SUBSTITUTE = "!BLANK"
 
-def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) -> Tuple[str, str]:
-    """ Extracts from one well-formatted `source_code` string the text for both
-        the starting prompt and the answer text. Formatting rules:
-            - Text that will be represented as blanks must be surrounded by `?`
+def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) -> Tuple[str, str, str]:
+    """ Extracts from one well-formatted `source_code` string the text for:
+
+        0) the question text
+        1) the starting prompt 
+        2) the answer text
+
+        Formatting rules:
+        - If the file begins with a docstring, it will become the question text
+            - The question text is removed from both the prompt and the answer
+        - Text surrounded by `?`s will become blanks in the prompt
             - Blanks cannot span more than a single line
+            - The text within the question marks fills the blank in the answer
             - `?`s in any kind of string-literal or comment are ignored
+        - Comments are removed from the prompt *unless*
+            - `keep_comments_in_prompt = True` OR
+            - The comment is of the form `#{n}given`, which are the only comments removed from the answer
         
-        Note: Empty lines are always stripped from the prompt. Comments are
-        also removed by default, but setting `keep_comments_in_prompt` to True 
-        will keep them in. Special comments of the kind `#{n}given` are always
-        left inthe prompt and always removed from the answer.
             
         e.g.
         ```
         > source = "sum = lambda a, b: ?a + b? #0given"
         > extract_prompt_ans(source)
-        ("sum = lambda a, b: !BLANK #0given", "sum = lambda a, b: a + b")
+        (None, "sum = lambda a, b: !BLANK #0given", "sum = lambda a, b: a + b")
 
-        > source = "?del bad?  # badness?!?"
+        > source = "\\\"\\\"\\\"Make good?\\\"\\\"\\\" ?del bad?  # badness?!?"
         > extract_prompt_ans(source)
-        ("!BLANK", "del bad  # badness?!?!")
+        ("Make good?", "!BLANK", "del bad  # badness?!?!")
         ```
     """
+    question_text = None
     prompt_code = ''
     answer_code = ''
 
     # (exclusive) end of the last match
     last_end = 0
+    first_match = True
 
     for match in re.finditer(MAIN_PATTERN, source_code):
         start, end = match.span()
@@ -63,7 +117,7 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
         last_end = end
         
         # only one of these is ever non-None
-        comment, string, blank_ans = match.groups()
+        comment, docstring, string, blank_ans = match.groups()
         
         if comment:
             special_comment = re.match(SPECIAL_COMMENT_PATTERN, comment)
@@ -76,6 +130,14 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
                 # every comment ends with a '\n'.
                 # must keep it to maintain whitespacing
                 prompt_code += comment
+        elif docstring:
+            if first_match:
+                # isolate the question doc
+                question_text = docstring[3:-3]
+            else:
+                # regular docstrings always stay in both
+                prompt_code += docstring
+                answer_code += docstring
         elif string:
             # strings always stay in both
             prompt_code += string
@@ -86,6 +148,8 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
             answer_code += blank_ans
         else:
             raise Exception('All capture groups are None after', last_end)
+        
+        first_match = False
 
     # don't forget everything after the last match!
     unmatched = source_code[last_end:]
@@ -97,22 +161,24 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
     # then remove all indentation
     prompt_code = '\n'.join(filter(bool, map(str.strip, prompt_code.splitlines())))
 
-    return prompt_code, answer_code
+    return question_text, prompt_code, answer_code
 
-def generate_question_html(prompt_code: str, tab='  ') -> str:
+def generate_question_html(prompt_code: str, question_text: str = None, tab='  ') -> str:
     """Turn an extracted prompt string into a question html file body"""
     indented = prompt_code.replace('\n', '\n' + tab)
-    return """
+    
+    if question_text is None:
+        question_text = tab + '<!-- Write the question prompt here -->'
+    
+    return """<!-- AUTO-GENERATED FILE -->
 <pl-question-panel>
-{tab}<!-- Write the question prompt here -->
+{question_text}
 </pl-question-panel>
 
-<!-- AUTO-GENERATED QUESTION -->
 <!-- see README for where the various parts of question live -->
 <pl-faded-parsons>
 {tab}{indented}
-</pl-faded-parsons>
-""".format(tab=tab, indented=indented).strip()
+</pl-faded-parsons>""".format(question_text=question_text, tab=tab, indented=indented)
 
 def filename(file_path: PathLike[AnyStr]) -> AnyStr:
     """Returns the basename in the path without the file extensions"""
@@ -125,7 +191,7 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
     print('- Extracting from source...')
     with open(source_path, 'r') as source:
         source_code = ''.join(source)
-        prompt_code, answer_code = extract_prompt_ans(source_code)
+        question_text, prompt_code, answer_code = extract_prompt_ans(source_code)
     
     question_dir = filename(source_path)
 
@@ -151,55 +217,14 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
     
     write_to_test_dir('setup_code.py', '# AUTO-GENERATED FILE\n')
 
-    write_to_test_dir('test.py', """# AUTO-GENERATED FILE
-from pl_helpers import name, points
-from pl_unit_test import PLTestCase
-from code_feedback import Feedback
-
-
-class Test(PLTestCase):
-    @points(1)
-    @name("test 0")
-    def test_0(self):
-        points = 0
-        # ex: calling a student defined function det 
-        #     with args=(1, 2, 3, 4)
-        # case = [1, 2, 3, 4]
-        # user_val = Feedback.call_user(self.st.det, *case)
-
-        # ex: calling a function defined in ans.py called det
-        #     with the same arguments
-        # ref_val = self.ref.det(*case)
-
-        # ex: test correctness, update points
-        # if Feedback.check_scalar('case: ' + case, ref_val, user_val):
-        #     points += 1
-        
-        Feedback.set_score(points)\n""")
+    write_to_test_dir('test.py', TEST_FILE_TEXT)
     
     print('- Populating {} directory...'.format(question_dir))
-    write_to_question_dir('question.html', generate_question_html(prompt_code))
-
-    write_to_question_dir('server.py',  """# AUTO-GENERATED FILE
-def generate(data):
-    # Define incoming variables here
-    names_for_user = [
-        # ex: student recieves a matrix m
-        # {"name": "m", "description": "a 2x2 matrix", "type": "numpy array"}
-    ]
-    # Define outgoing variables here
-    names_from_user = [
-        # ex: student defines a determinant function name det
-        # {"name": "det", "description": "determinant for a 2x2 matrix", "type": "python function"}
-    ]
-
-    data["params"]["names_for_user"] = names_for_user
-    data["params"]["names_from_user"] = names_from_user
-
-    return data\n""")
+    
+    question_html = generate_question_html(prompt_code, question_text=question_text)
+    write_to_question_dir('question.html', question_html)
     
     question_title = ' '.join(l.capitalize() for l in question_dir.split('_'))
-    
     info_json = {
         'uuid': str(uuid4()),
         'title': question_title,
@@ -213,8 +238,9 @@ def generate(data):
             'entrypoint': '/python_autograder/run.sh'
         }
     }
-
     write_to_question_dir('info.json', dumps(info_json, indent=4) + '\n')
+
+    write_to_question_dir('server.py',  SERVER_FILE_TEXT)
 
 
 if __name__ == '__main__':
