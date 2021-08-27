@@ -1,5 +1,7 @@
 from typing import *
 import re
+from sys import argv
+from os import path, PathLike, mkdir
 
 """ Matches, with precedence in listed order:
     - capture group 0
@@ -94,9 +96,43 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
 
     return prompt_code, answer_code
 
+def generate_question_html(prompt_code: str, tab='  ') -> str:
+    """Turn an extracted prompt string into a question html file body"""
+    indented = prompt_code.replace('\n', '\n' + tab)
+    return """
+<pl-question-panel>
+{tab}<!-- Write the question prompt here -->
+</pl-question-panel>
+
+<!-- AUTO-GENERATED QUESTION -->
+<!-- see README for where the various parts of question live -->
+<pl-faded-parsons>
+{tab}{indented}
+</pl-faded-parsons>
+""".format(tab=tab, indented=indented).strip()
+
+def filename(path: PathLike[AnyStr]) -> AnyStr:
+    """Returns the basename in the path without the file extensions"""
+    return path.splitext(path.basename(path))[0]
+
+def setup_fpp_question(root_dir_name: PathLike[AnyStr], prompt_code: str, answer_code: str):
+    mkdir(root_dir_name)
+    test_dir = path.join(root_dir_name, 'tests')
+
+
 if __name__ == '__main__':
-    with open('master.py', 'r') as source:
+    if len(argv) < 2:
+        raise Exception('Please provide a source code path as a first CLI argument')
+    
+    source_path = argv[1]
+    
+    with open(source_path, 'r') as source:
         source_code = ''.join(source)
         prompt_code, answer_code = extract_prompt_ans(source_code)
-        print(prompt_code, answer_code, sep="\n\n --- \n\n")
+        question_html = generate_question_html(prompt_code)
+        print(question_html, answer_code, sep="\n\n ▲prompt▲ --- ▼answer▼ \n\n")
+
+    print()
+
+
         
