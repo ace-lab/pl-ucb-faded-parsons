@@ -1,5 +1,5 @@
 from typing import *
-import re
+from re import compile, finditer, match as test
 from sys import argv
 from os import makedirs, path, PathLike
 from shutil import copyfile
@@ -62,9 +62,9 @@ def generate(data):
 #     - (one-line) single-quote string literals
 # - capture group 3
 #     - (one-line) answer surrounded by ?'s (excluding the ?'s)
-MAIN_PATTERN = re.compile(r'(\#.*?)(?=\r?\n)|(\"\"\"[\s\S]*?\"\"\")|(\'.*?\'|\".*?\")|\?(.*?)\?')
+MAIN_PATTERN = compile(r'(\#.*?)(?=\r?\n)|(\"\"\"[\s\S]*?\"\"\")|(\'.*?\'|\".*?\")|\?(.*?)\?')
 
-SPECIAL_COMMENT_PATTERN = re.compile(r'^#\d+given')
+SPECIAL_COMMENT_PATTERN = compile(r'^#\d+given')
 
 BLANK_SUBSTITUTE = '!BLANK'
 
@@ -106,7 +106,7 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
     last_end = 0
     first_match = True
 
-    for match in re.finditer(MAIN_PATTERN, source_code):
+    for match in finditer(MAIN_PATTERN, source_code):
         start, end = match.span()
        
         # make sure to keep uncaptured text between matches
@@ -121,7 +121,7 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
         comment, docstring, string, blank_ans = match.groups()
         
         if comment:
-            special_comment = re.match(SPECIAL_COMMENT_PATTERN, comment)
+            special_comment = test(SPECIAL_COMMENT_PATTERN, comment)
 
             if not special_comment:
                 answer_code += comment
@@ -207,64 +207,61 @@ def filename(file_path: PathLike[AnyStr]) -> AnyStr:
     """Returns the basename in the path without the file extensions"""
     return path.splitext(path.basename(file_path))[0]
 
+def write_to(parent_dir: PathLike[AnyStr], file_path: PathLike[AnyStr], data: str):
+    with open(path.join(parent_dir, file_path), 'w+') as f:
+        f.write(data)
+
 def generate_fpp_question(source_path: PathLike[AnyStr]):
     """ Takes a path of a well-formatted source (see `extract_prompt_ans`),
         then generates and populates a question directory of the same name.
     """
+    print('Generating from source', source_path) 
+
     print('- Extracting from source...')
     with open(source_path, 'r') as source:
         source_code = ''.join(source)
         question_text, prompt_code, answer_code = extract_prompt_ans(source_code)
     
     question_name = filename(source_path)
+
+    # create all new content in a new folder that is a
+    # sibling of the source file in the filesystem
     question_dir = path.join(path.dirname(source_path), question_name)
 
     print('- Creating destination directories...')
     test_dir = path.join(question_dir, 'tests')
     makedirs(test_dir, exist_ok=True)
 
+
     copy_dest_path = path.join(question_dir, 'source.py')
     print('- Copying {} to {} ...'.format(path.basename(source_path), copy_dest_path))
     copyfile(source_path, copy_dest_path)
 
-    def write_to_dir(file_path: PathLike[AnyStr], data: AnyStr):
-        with open(file_path, 'w+') as f:
-            f.write(data)
 
-    def write_to_question_dir(file_name: PathLike[AnyStr], data: AnyStr):
-        write_to_dir(path.join(question_dir, file_name), data)
-
-    def write_to_test_dir(file_name: PathLike[AnyStr], data: AnyStr):
-        write_to_dir(path.join(test_dir, file_name), data)
-
-    ### /{question_name}/ ########    
     print('- Populating {} ...'.format(question_dir))
     
     question_html = generate_question_html(prompt_code, question_text=question_text)
-    write_to_question_dir('question.html', question_html)
+    write_to(question_dir, 'question.html', question_html)
     
-    write_to_question_dir('info.json', generate_info_json(question_name))
+    write_to(question_dir, 'info.json', generate_info_json(question_name))
 
-    write_to_question_dir('server.py',  SERVER_FILE_TEXT)
+    write_to(question_dir, 'server.py',  SERVER_FILE_TEXT)
     
-    ### /{question_name}/test/ ###
+
     print('- Populating {} ...'.format(test_dir))
 
-    write_to_test_dir('ans.py', answer_code)
+    write_to(test_dir, 'ans.py', answer_code)
     
-    write_to_test_dir('setup_code.py', SETUP_CODE_FILE_TEXT)
+    write_to(test_dir, 'setup_code.py', SETUP_CODE_FILE_TEXT)
 
-    write_to_test_dir('test.py', TEST_FILE_TEXT)
+    write_to(test_dir, 'test.py', TEST_FILE_TEXT)
+    
+
+    print('Done.')
 
 
 if __name__ == '__main__':
     if len(argv) < 2:
         raise Exception('Please provide a source code path as a first CLI argument')
-    
-    source_path = argv[1]
-
-    print('Generating from source', source_path)    
-
-    generate_fpp_question(source_path)
-
-    print('Done.')
+       
+    generate_fpp_question(source_path = argv[1])
