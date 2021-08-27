@@ -77,7 +77,8 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
 
         Formatting rules:
         - If the file begins with a docstring, it will become the question text
-            - The question text is removed from both the prompt and the answer
+            - The question text is removed from the answer
+            - Docstrings are always removed from the prompt
         - Text surrounded by `?`s will become blanks in the prompt
             - Blanks cannot span more than a single line
             - The text within the question marks fills the blank in the answer
@@ -136,8 +137,8 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
                 # isolate the question doc
                 question_text = docstring[3:-3]
             else:
-                # regular docstrings always stay in both
-                prompt_code += docstring
+                # docstrings cannot be included in current FPP
+                # prompt_code += docstring
                 answer_code += docstring
         elif string:
             # strings always stay in both
@@ -262,16 +263,22 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
 
 if __name__ == '__main__':
     if len(argv) < 2:
-        raise Exception('Please provide a source code path as a first CLI argument')
+        raise Exception('Please provide at least one source code path as an argument')
    
-    source_path = argv[1]
-   
-    if not path.exists(source_path):
-        original = source_path
-        source_path = path.join('questions', source_path)
-        if not path.exists(source_path):
-            raise FileNotFoundError('Could not find file at {} or {}.'.format(original, source_path))
-        else:
-            print('\033[93m - Could not find {} in current directory. Proceeding with detected file. - \033[0m'.format(original))
+    arg_iter = iter(argv)
+    _this_file = next(arg_iter)
 
-    generate_fpp_question(source_path)
+    for source_path in arg_iter:
+        if not path.exists(source_path):
+            original = source_path
+            source_path = path.join('questions', source_path)
+            if not path.exists(source_path):
+                raise FileNotFoundError('Could not find file at {} or {}.'.format(original, source_path))
+            else:
+                print('\033[93m - Could not find {} in current directory. Proceeding with detected file. - \033[0m'.format(original))
+
+        generate_fpp_question(source_path)
+    
+    if len(argv) > 2:
+        print('\033[92mBatch completed successfullly on {} files.\033[0m'.format(len(argv) - 1))
+
