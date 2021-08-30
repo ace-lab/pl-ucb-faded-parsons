@@ -339,25 +339,26 @@ def main():
     args = argv[1:]
 
     if '-h' in args or '--help' in args:
-        print('\n'.join([Bcolors.f(Bcolors.OKGREEN, 'A tool for generating faded parsons problems.')
-        , ''
-        , 'Provide the path to well-formatted python file(s), and a question template will be generated.'
-        , 'Formatting rules:'
-        , '- If the file begins with a docstring, it will become the question text'
-        , '    - The question text is removed from the answer'
-        , '    - Docstrings are always removed from the prompt'
-        , '- Text surrounded by `?`s will become blanks in the prompt'
-        , '    - Blanks cannot span more than a single line'
-        , '    - The text within the question marks fills the blank in the answer'
-        , '    - `?`s in any kind of string-literal or comment are ignored'
-        , '- Comments are removed from the prompt *unless*'
-        , '    - The comment is of the form `#{n}given`, which are the only comments removed from the answer'
-        , ''
-        , 'Flags:'
-        , ' -h/--help: prints this guide'
-        , ' --profile: appending anywhere in the args allows profiling this parser'
-        , ' --force-json <path>: will overwrite the question\'s info.json file with auto-generated content'
-        ]))
+        print('\n'.join(
+            [Bcolors.f(Bcolors.OKGREEN, 'A tool for generating faded parsons problems.')
+            , ''
+            , 'Provide the path to well-formatted python file(s), and a question template will be generated.'
+            , Bcolors.f(Bcolors.OKBLUE, 'Formatting rules:')
+            , '- If the file begins with a docstring, it will become the question text'
+            , '    - The question text is removed from the answer'
+            , '    - Docstrings are always removed from the prompt'
+            , '- Text surrounded by `?`s will become blanks in the prompt'
+            , '    - Blanks cannot span more than a single line'
+            , '    - The text within the question marks fills the blank in the answer'
+            , '    - `?`s in any kind of string-literal or comment are ignored'
+            , '- Comments are removed from the prompt *unless*'
+            , '    - The comment is of the form `#{n}given`, which are the only comments removed from the answer'
+            , ''
+            , Bcolors.f(Bcolors.OKBLUE, 'Flags:')
+            , ' -h/--help: prints this guide'
+            , ' --profile: appending anywhere in the args allows profiling this parser'
+            , ' --force-json <path>: will overwrite the question\'s info.json file with auto-generated content'
+            ]))
         return
 
     if '--profile' in args:
