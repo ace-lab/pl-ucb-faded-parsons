@@ -1,6 +1,5 @@
 from typing import *
 from re import compile, finditer, match as test
-from sys import argv
 from os import makedirs, path, PathLike
 from shutil import copyfile
 from uuid import uuid4
@@ -261,8 +260,9 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
 
     print('\033[92mDone.\033[0m')
 
+def main():
+    from sys import argv
 
-if __name__ == '__main__':
     if len(argv) < 2:
         raise Exception('Please provide at least one source code path as an argument')
    
@@ -283,3 +283,6 @@ if __name__ == '__main__':
     if len(argv) > 2:
         print('\033[92mBatch completed successfullly on {} files.\033[0m'.format(len(argv) - 1))
 
+
+if __name__ == '__main__':
+    main()
