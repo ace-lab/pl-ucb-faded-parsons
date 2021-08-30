@@ -3,7 +3,33 @@ from re import compile, finditer, match as test
 from os import makedirs, path, PathLike
 from shutil import copyfile
 from uuid import uuid4
-from json import dumps, load
+from json import dumps
+from enum import Enum, unique
+
+class Bcolors(Enum):
+    # https://stackoverflow.com/questions/287871/how-to-print-colored-text-to-the-terminal
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+    @staticmethod
+    def f(color, *args, sep=' '):
+        return color.value + sep.join(map(str, args)) + Bcolors.ENDC.value
+
+    @staticmethod
+    def printf(color, *args, **kwargs):
+        sep = ' '
+        if 'sep' in kwargs:
+            sep = kwargs['sep']
+            del kwargs['sep']
+        print(Bcolors.f(color, *args, sep=sep), **kwargs)
+
 
 TEST_FILE_TEXT = """# AUTO-GENERATED FILE
 from pl_helpers import name, points
@@ -216,7 +242,7 @@ def generate_fpp_question(source_path: PathLike[AnyStr], force_generate_json: bo
     """ Takes a path of a well-formatted source (see `extract_prompt_ans`),
         then generates and populates a question directory of the same name.
     """
-    print('\033[94m' + 'Generating from source', source_path, '\033[0m') 
+    Bcolors.printf(Bcolors.OKBLUE, 'Generating from source', source_path)
 
     print('- Extracting from source...')
     with open(source_path, 'r') as source:
@@ -244,8 +270,10 @@ def generate_fpp_question(source_path: PathLike[AnyStr], force_generate_json: bo
     question_html = generate_question_html(prompt_code, question_text=question_text)
     write_to(question_dir, 'question.html', question_html)
     
-    if force_generate_json or not path.exists(path.join(question_dir, 'info.json')):
-        write_to(question_dir, 'info.json', generate_info_json(question_name));
+    json_path = path.join(question_dir, 'info.json')
+    if force_generate_json or not path.exists(json_path):
+        write_to(question_dir, 'info.json', generate_info_json(question_name))
+        Bcolors.printf(Bcolors.WARNING, '  - Overwriting', json_path, '...')
 
     write_to(question_dir, 'server.py',  SERVER_FILE_TEXT)
     
@@ -259,7 +287,7 @@ def generate_fpp_question(source_path: PathLike[AnyStr], force_generate_json: bo
     write_to(test_dir, 'test.py', TEST_FILE_TEXT)
     
 
-    print('\033[92m', 'Done.', '\033[0m', sep='')
+    Bcolors.printf(Bcolors.OKGREEN, 'Done.')
 
 def generate_many(args: list[str]):
     if not args:
@@ -272,7 +300,8 @@ def generate_many(args: list[str]):
             if source_path.endswith('force-json'):
                 force_json = True
             else:
-                print('\033[93m {} not recognized as a flag! use --help for more info. - \033[0m'.format(source_path))
+                Bcolors.printf(Bcolors.WARNING, '-', source_path, 
+                    'not recognized as a flag! use --help for more info. -')
             continue
         
         if not path.exists(source_path):
@@ -281,14 +310,15 @@ def generate_many(args: list[str]):
             if not path.exists(source_path):
                 raise FileNotFoundError('Could not find file at {} or {}.'.format(original, source_path))
             else:
-                print('\033[93m - Could not find {} in current directory. Proceeding with detected file. - \033[0m'.format(original))
+                Bcolors.printf(Bcolors.WARNING, '- Could not find', original, 
+                    'in current directory. Proceeding with detected file. -')
 
         generate_fpp_question(source_path, force_generate_json=force_json)
         files += 1
         force_json = False
     
     if len(args) > 2:
-        print('\033[92m' + 'Batch completed successfullly on', files, 'files.', '\033[0m')
+        Bcolors.printf(Bcolors.OKGREEN, 'Batch completed successfullly on', files, 'files.')
 
 def profile_generate_many(args: list[str]):
     from cProfile import Profile
@@ -309,7 +339,7 @@ def main():
     args = argv[1:]
 
     if '-h' in args or '--help' in args:
-        print('\n'.join([ '\033[92mA tool for generating faded parsons problems.\033[0m'
+        print('\n'.join([Bcolors.f(Bcolors.OKGREEN, 'A tool for generating faded parsons problems.')
         , ''
         , 'Provide the path to well-formatted python file(s), and a question template will be generated.'
         , 'Formatting rules:'
