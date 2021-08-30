@@ -87,7 +87,7 @@ def generate(data):
 #     - (one-line) single-quote string literals
 # - capture group 3
 #     - (one-line) answer surrounded by ?'s (excluding the ?'s)
-MAIN_PATTERN = compile(r'(\#.*?)(?=\r?\n)|(\"\"\"[\s\S]*?\"\"\")|(\'.*?\'|\".*?\")|\?(.*?)\?')
+MAIN_PATTERN = compile(r'(\#.*?)(?=\#|\r?\n)|(\"\"\"[\s\S]*?\"\"\")|(\'.*?\'|\".*?\")|\?(.*?)\?')
 
 SPECIAL_COMMENT_PATTERN = compile(r'^#(blank[^#]*|\d+given)\s*')
 
