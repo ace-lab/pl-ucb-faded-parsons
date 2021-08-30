@@ -1,0 +1,17 @@
+{
+    "uuid": "fce630bb-5558-4026-b6c1-3c1540968467",
+    "title": "Polynomial Evaluation",
+    "topic": "",
+    "tags": [
+        "berkeley",
+        "fp"
+    ],
+    "type": "v3",
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 5
+    }
+}
