@@ -2,6 +2,11 @@
 polynomial with the given coefficients at the given value of <code>x</code>,
 ie, evaluate $$f(x) = \sum_i \textrm{coeffs}_i ~ x^i$$"""
 
+## setup_code ##
+# TODO(LBC): include code under this header as setup_code.py
+# a = 3
+# b = a + 4
+## setup_code ##
 
 def poly(coeffs, x): #0given
     # Keep track of the total as we iterate through each term.
@@ -13,3 +18,15 @@ def poly(coeffs, x): #0given
         # Add the value of the term to the total.
         ?total? = total + coeff * (x ** power) #2given
     return total #1given
+
+## test ##
+# from pl_helpers import name, points
+# from pl_unit_test import PLTestCase
+# from code_feedback import Feedback
+
+# @names_from_user('poly')
+# @names_from_setup('a', 'b')
+# class Test:
+#     pass
+
+## test ##
