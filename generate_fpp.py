@@ -78,18 +78,25 @@ def generate(data):
     return data\n"""
 
 # Matches, with precedence in listed order:
-# - capture group 0
-#     - (one-line) comments (excluding the line-break terminator)
-# - capture group 1
-#     - (multi-line) triple-quote string literals
-# - capture group 2
-#     - (one-line) single-apostrophe string literals
-#     - (one-line) single-quote string literals
-# - capture group 3
-#     - (one-line) answer surrounded by ?'s (excluding the ?'s)
-MAIN_PATTERN = compile(r'(\#.*?)(?=\#|\r?\n)|(\"\"\"[\s\S]*?\"\"\")|(\'.*?\'|\".*?\")|\?(.*?)\?')
+MAIN_PATTERN = compile(
+# - capture group 0: (one-line) region delimiter surrounded by ##'s (excluding the ##'s and newline/eof)
+    r'\s*\#\#\s*(.*?)\s*\#\#\s*(?=\#|\r?\n|$)|' +
+# - capture group 1:  (one-line) comment, up to next comment or newline (excluding the newline/eof)
+    r'(\#.*?)(?=\#|\r?\n|$)|' +
+# - capture group 2: (multi-line) triple-quote string literal
+    r'(\"\"\"[\s\S]*?\"\"\")|' + 
+# - capture group 3:
+#     - (one-line) single-apostrophe string literal
+#     - (one-line) single-quote string literal
+    r'(\'.*?\'|\".*?\")|' + 
+# - capture group 4:  (one-line) answer surrounded by ?'s (excluding the ?'s)
+    r'\?(.*?)\?'
+)
 
 SPECIAL_COMMENT_PATTERN = compile(r'^#(blank[^#]*|\d+given)\s*')
+
+# capture group: region name
+REGION_COMMENT_PATTERN = compile(r'')
 
 BLANK_SUBSTITUTE = '!BLANK'
 
@@ -145,9 +152,11 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
         last_end = end
         
         # only one of these is ever non-None
-        comment, docstring, string, blank_ans = match.groups()
+        region_delim, comment, docstring, string, blank_ans = match.groups()
         
-        if comment:
+        if region_delim:
+            print(region_delim)
+        elif comment:
             special_comment = test(SPECIAL_COMMENT_PATTERN, comment)
 
             if not special_comment:
