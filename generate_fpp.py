@@ -266,11 +266,14 @@ def generate_many(args: list[str]):
         raise Exception('Please provide at least one source code path as an argument')
 
     force_json = False
+    files = 0
     for source_path in args:
         if source_path.startswith('--'):
             if source_path.endswith('force-json'):
                 force_json = True
-                continue
+            else:
+                print('\033[93m {} not recognized as a flag! use --help for more info. - \033[0m'.format(source_path))
+            continue
         
         if not path.exists(source_path):
             original = source_path
@@ -281,10 +284,11 @@ def generate_many(args: list[str]):
                 print('\033[93m - Could not find {} in current directory. Proceeding with detected file. - \033[0m'.format(original))
 
         generate_fpp_question(source_path, force_generate_json=force_json)
+        files += 1
         force_json = False
     
     if len(args) > 2:
-        print('\033[92m' + 'Batch completed successfullly on', len(args), 'files.', '\033[0m')
+        print('\033[92m' + 'Batch completed successfullly on', files, 'files.', '\033[0m')
 
 def profile_generate_many(args: list[str]):
     from cProfile import Profile
