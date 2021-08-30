@@ -89,7 +89,7 @@ def generate(data):
 #     - (one-line) answer surrounded by ?'s (excluding the ?'s)
 MAIN_PATTERN = compile(r'(\#.*?)(?=\r?\n)|(\"\"\"[\s\S]*?\"\"\")|(\'.*?\'|\".*?\")|\?(.*?)\?')
 
-SPECIAL_COMMENT_PATTERN = compile(r'^#\d+given')
+SPECIAL_COMMENT_PATTERN = compile(r'^#(blank[^#]*|\d+given)\s*')
 
 BLANK_SUBSTITUTE = '!BLANK'
 
@@ -110,7 +110,8 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
             - `?`s in any kind of string-literal or comment are ignored
         - Comments are removed from the prompt *unless*
             - `keep_comments_in_prompt = True` OR
-            - The comment is of the form `#{n}given`, which are the only comments removed from the answer
+            - The comment is of the form `#{n}given` or `#blank`, 
+              which are the only comments removed from the answer
         
             
         e.g.
@@ -352,7 +353,8 @@ def main():
             , '    - The text within the question marks fills the blank in the answer'
             , '    - `?`s in any kind of string-literal or comment are ignored'
             , '- Comments are removed from the prompt *unless*'
-            , '    - The comment is of the form `#{n}given`, which are the only comments removed from the answer'
+            , '    - The comment is of the form `#{n}given` or `#blank`,' 
+            , '      which are the only comments removed from the answer'
             , ''
             , Bcolors.f(Bcolors.OKBLUE, 'Flags:')
             , ' -h/--help: prints this guide'
