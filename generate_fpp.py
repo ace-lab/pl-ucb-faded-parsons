@@ -216,7 +216,7 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
     """ Takes a path of a well-formatted source (see `extract_prompt_ans`),
         then generates and populates a question directory of the same name.
     """
-    print('\033[94mGenerating from source', source_path, '\033[0m') 
+    print('\033[94m' + 'Generating from source', source_path, '\033[0m') 
 
     print('- Extracting from source...')
     with open(source_path, 'r') as source:
@@ -258,18 +258,13 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
     write_to(test_dir, 'test.py', TEST_FILE_TEXT)
     
 
-    print('\033[92mDone.\033[0m')
+    print('\033[92m', 'Done.', '\033[0m', sep='')
 
-def main():
-    from sys import argv
-
-    if len(argv) < 2:
+def generate_many(source_paths: list[str]):
+    if not source_paths:
         raise Exception('Please provide at least one source code path as an argument')
-   
-    arg_iter = iter(argv)
-    _this_file = next(arg_iter)
 
-    for source_path in arg_iter:
+    for source_path in source_paths:
         if not path.exists(source_path):
             original = source_path
             source_path = path.join('questions', source_path)
@@ -280,9 +275,32 @@ def main():
 
         generate_fpp_question(source_path)
     
-    if len(argv) > 2:
-        print('\033[92mBatch completed successfullly on {} files.\033[0m'.format(len(argv) - 1))
+    if len(source_paths) > 2:
+        print('\033[92m' + 'Batch completed successfullly on', len(source_paths), 'files.', '\033[0m')
 
+def profile_generate_many(source_paths: list[str]):
+    from cProfile import Profile
+    from pstats import Stats, SortKey
+
+    with Profile() as pr:
+        generate_many(source_paths)
+    
+    stats = Stats(pr)
+    stats.sort_stats(SortKey.TIME)
+    print('\n---------------\n')
+    stats.print_stats()
+
+
+def main():
+    from sys import argv
+    # ignore executable name
+    args = argv[1:]
+
+    if '--profile' in args:
+        args.remove('--profile')
+        profile_generate_many(args)
+    else:
+        generate_many(args)
 
 if __name__ == '__main__':
     main()
