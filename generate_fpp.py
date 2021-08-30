@@ -198,7 +198,8 @@ def generate_info_json(question_name: str, indent=4) -> str:
         'externalGradingOptions': {
             'enabled': True,
             'image': 'prairielearn/grader-python',
-            'entrypoint': '/python_autograder/run.sh'
+            'entrypoint': '/python_autograder/run.sh',
+            'timeout': 5
         }
     }
 
