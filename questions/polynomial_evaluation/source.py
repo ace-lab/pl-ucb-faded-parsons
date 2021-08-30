@@ -20,13 +20,13 @@ def poly(coeffs, x): #0given
     return total #1given
 
 ## test ##
-# from pl_helpers import name, points
-# from pl_unit_test import PLTestCase
-# from code_feedback import Feedback
+from pl_helpers import name, points
+from pl_unit_test import PLTestCase
+from code_feedback import Feedback
 
-# @names_from_user('poly')
-# @names_from_setup('a', 'b')
-# class Test:
-#     pass
+@names_from_user('poly')
+@names_from_setup('a', 'b')
+class Test:
+    pass
 
 ## test ##

@@ -11,3 +11,11 @@ def poly(coeffs, x):
         # Add the value of the term to the total.
         total = total + coeff * (x ** power) 
     return total 
+from pl_helpers import name, points
+from pl_unit_test import PLTestCase
+from code_feedback import Feedback
+
+@names_from_user()
+@names_from_setup(, )
+class Test:
+    pass

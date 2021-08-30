@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import *
 from re import compile, finditer, match as test
 from os import makedirs, path, PathLike
@@ -139,6 +140,9 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
     # (exclusive) end of the last match
     last_end = 0
     first_match = True
+    
+    regions = defaultdict(str)
+    current_region = None
 
     for match in finditer(MAIN_PATTERN, source_code):
         start, end = match.span()
@@ -155,7 +159,19 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
         region_delim, comment, docstring, string, blank_ans = match.groups()
         
         if region_delim:
-            print(region_delim)
+            if current_region:
+                if region_delim != current_region:
+                    raise SyntaxError("Region \"{}\" began before \"{}\" ended".format(region_delim, current_region))
+                else:    
+                    if unmatched:
+                        print(unmatched)
+                    current_region = None
+            else:
+                current_region = region_delim
+        elif current_region:
+            if unmatched:
+                print(unmatched)
+            print(comment, docstring, string, blank_ans)
         elif comment:
             special_comment = test(SPECIAL_COMMENT_PATTERN, comment)
 
