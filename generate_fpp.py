@@ -3,7 +3,7 @@ from re import compile, finditer, match as test
 from os import makedirs, path, PathLike
 from shutil import copyfile
 from uuid import uuid4
-from json import dumps
+from json import dumps, load
 
 TEST_FILE_TEXT = """# AUTO-GENERATED FILE
 from pl_helpers import name, points
@@ -212,7 +212,7 @@ def write_to(parent_dir: PathLike[AnyStr], file_path: PathLike[AnyStr], data: st
     with open(path.join(parent_dir, file_path), 'w+') as f:
         f.write(data)
 
-def generate_fpp_question(source_path: PathLike[AnyStr]):
+def generate_fpp_question(source_path: PathLike[AnyStr], force_generate_json: bool = False):
     """ Takes a path of a well-formatted source (see `extract_prompt_ans`),
         then generates and populates a question directory of the same name.
     """
@@ -244,7 +244,8 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
     question_html = generate_question_html(prompt_code, question_text=question_text)
     write_to(question_dir, 'question.html', question_html)
     
-    write_to(question_dir, 'info.json', generate_info_json(question_name))
+    if force_generate_json or not path.exists(path.join(question_dir, 'info.json')):
+        write_to(question_dir, 'info.json', generate_info_json(question_name));
 
     write_to(question_dir, 'server.py',  SERVER_FILE_TEXT)
     
@@ -260,11 +261,17 @@ def generate_fpp_question(source_path: PathLike[AnyStr]):
 
     print('\033[92m', 'Done.', '\033[0m', sep='')
 
-def generate_many(source_paths: list[str]):
-    if not source_paths:
+def generate_many(args: list[str]):
+    if not args:
         raise Exception('Please provide at least one source code path as an argument')
 
-    for source_path in source_paths:
+    force_json = False
+    for source_path in args:
+        if source_path.startswith('--'):
+            if source_path.endswith('force-json'):
+                force_json = True
+                continue
+        
         if not path.exists(source_path):
             original = source_path
             source_path = path.join('questions', source_path)
@@ -273,17 +280,18 @@ def generate_many(source_paths: list[str]):
             else:
                 print('\033[93m - Could not find {} in current directory. Proceeding with detected file. - \033[0m'.format(original))
 
-        generate_fpp_question(source_path)
+        generate_fpp_question(source_path, force_generate_json=force_json)
+        force_json = False
     
-    if len(source_paths) > 2:
-        print('\033[92m' + 'Batch completed successfullly on', len(source_paths), 'files.', '\033[0m')
+    if len(args) > 2:
+        print('\033[92m' + 'Batch completed successfullly on', len(args), 'files.', '\033[0m')
 
-def profile_generate_many(source_paths: list[str]):
+def profile_generate_many(args: list[str]):
     from cProfile import Profile
     from pstats import Stats, SortKey
 
     with Profile() as pr:
-        generate_many(source_paths)
+        generate_many(args)
     
     stats = Stats(pr)
     stats.sort_stats(SortKey.TIME)
@@ -295,6 +303,28 @@ def main():
     from sys import argv
     # ignore executable name
     args = argv[1:]
+
+    if '-h' in args or '--help' in args:
+        print('\n'.join([ '\033[92mA tool for generating faded parsons problems.\033[0m'
+        , ''
+        , 'Provide the path to well-formatted python file(s), and a question template will be generated.'
+        , 'Formatting rules:'
+        , '- If the file begins with a docstring, it will become the question text'
+        , '    - The question text is removed from the answer'
+        , '    - Docstrings are always removed from the prompt'
+        , '- Text surrounded by `?`s will become blanks in the prompt'
+        , '    - Blanks cannot span more than a single line'
+        , '    - The text within the question marks fills the blank in the answer'
+        , '    - `?`s in any kind of string-literal or comment are ignored'
+        , '- Comments are removed from the prompt *unless*'
+        , '    - The comment is of the form `#{n}given`, which are the only comments removed from the answer'
+        , ''
+        , 'Flags:'
+        , ' -h/--help: prints this guide'
+        , ' --profile: appending anywhere in the args allows profiling this parser'
+        , ' --force-json <path>: will overwrite the question\'s info.json file with auto-generated content'
+        ]))
+        return
 
     if '--profile' in args:
         args.remove('--profile')
