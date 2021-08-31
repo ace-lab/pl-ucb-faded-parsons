@@ -101,18 +101,15 @@ REGION_COMMENT_PATTERN = compile(r'')
 
 BLANK_SUBSTITUTE = '!BLANK'
 
-def extract_prompt_ans(
+def extract_regions(
     source_code: str, 
     keep_comments_in_prompt: bool = False
-    ) -> Tuple[str, str, str]:
-    """ Extracts from one well-formatted `source_code` string the text for:
-
-        0) the question text
-        1) the starting prompt 
-        2) the answer text
+    ) -> Dict[str, str]:
+    """ Extracts from well-formatted `source_code` string the text for the question, 
+        the problem starting code, the answer code, and any other defined regions
 
         Formatting rules:
-        - If the file begins with a docstring, it will become the question text
+        - If the file begins with a docstring, it will become the `question_text` region
             - The question text is removed from the answer
             - Docstrings are always removed from the prompt
         - Text surrounded by `?`s will become blanks in the prompt
@@ -123,20 +120,23 @@ def extract_prompt_ans(
             - `keep_comments_in_prompt = True` OR
             - The comment is of the form `#{n}given` or `#blank`, 
               which are the only comments removed from the answer
+        - Custom regions are begun and ended by `## {region name} ##`
+            - A maximum of one region may be open at a time
+            - All text in a region is only copied into that region
+            - Regions must be closed before the end of the source string
         
             
         e.g.
         ```
         > source = "sum = lambda a, b: ?a + b? #0given"
-        > extract_prompt_ans(source)
-        (None, "sum = lambda a, b: !BLANK #0given", "sum = lambda a, b: a + b")
+        > extract_regions(source)
+        {'prompt_code': "sum = lambda a, b: !BLANK #0given", 'answer_code': "sum = lambda a, b: a + b"}
 
         > source = "\\\"\\\"\\\"Make good?\\\"\\\"\\\" ?del bad?  # badness?!?"
-        > extract_prompt_ans(source)
-        ("Make good?", "!BLANK", "del bad  # badness?!?!")
+        > extract_regions(source)
+        {'question_text': "Make good?", 'prompt_code': "!BLANK", 'answer_code': "del bad  # badness?!?!"}
         ```
     """
-    question_text = None
     prompt_code = ''
     answer_code = ''
 
@@ -188,7 +188,7 @@ def extract_prompt_ans(
         elif docstring:
             if first_match:
                 # isolate the question doc
-                question_text = docstring[3:-3]
+                regions['question_text'] = docstring[3:-3]
             else:
                 # docstrings cannot be included in current FPP
                 # prompt_code += docstring
@@ -221,9 +221,10 @@ def extract_prompt_ans(
     # then remove all indentation
     prompt_code = '\n'.join(filter(bool, map(str.strip, prompt_code.splitlines())))
 
-    print(regions)
+    regions['prompt_code'] = prompt_code
+    regions['answer_code'] = answer_code
 
-    return question_text, prompt_code, answer_code
+    return regions
 
 def generate_question_html(prompt_code: str, question_text: str = None, tab='  ') -> str:
     """Turn an extracted prompt string into a question html file body"""
@@ -282,7 +283,10 @@ def generate_fpp_question(source_path: PathLike[AnyStr], force_generate_json: bo
     print('- Extracting from source...')
     with open(source_path, 'r') as source:
         source_code = ''.join(source)
-        question_text, prompt_code, answer_code = extract_prompt_ans(source_code)
+        regions = extract_regions(source_code)
+        question_text = regions['question_text']
+        prompt_code = regions['prompt_code']
+        answer_code = regions['answer_code']
     
     question_name = filename(source_path)
 
