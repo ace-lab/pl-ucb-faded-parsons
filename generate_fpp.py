@@ -501,7 +501,7 @@ def main():
 
     if '-h' in args or '--help' in args:
         print('\n'.join(
-            [Bcolors.f(Bcolors.OKGREEN, 'A tool for generating faded parsons problems.')
+            [ Bcolors.f(Bcolors.OKGREEN, 'A tool for generating faded parsons problems.')
             , ''
             , 'Provide the path to well-formatted python file(s), and a question template will be generated.'
             , Bcolors.f(Bcolors.OKBLUE, 'Formatting rules:')
