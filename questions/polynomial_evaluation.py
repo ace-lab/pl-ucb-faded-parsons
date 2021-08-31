@@ -3,9 +3,8 @@ polynomial with the given coefficients at the given value of <code>x</code>,
 ie, evaluate $$f(x) = \sum_i \textrm{coeffs}_i ~ x^i$$"""
 
 ## setup_code ##
-# TODO(LBC): include code under this header as setup_code.py
-# a = 3
-# b = a + 4
+a = 3
+b = a + 4
 ## setup_code ##
 
 def poly(coeffs, x): #0given
@@ -24,8 +23,6 @@ from pl_helpers import name, points
 from pl_unit_test import PLTestCase
 from code_feedback import Feedback
 
-@names_from_user('poly')
-@names_from_setup('a', 'b')
 class Test:
     pass
 

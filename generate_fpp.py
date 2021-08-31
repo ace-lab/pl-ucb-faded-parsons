@@ -101,7 +101,10 @@ REGION_COMMENT_PATTERN = compile(r'')
 
 BLANK_SUBSTITUTE = '!BLANK'
 
-def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) -> Tuple[str, str, str]:
+def extract_prompt_ans(
+    source_code: str, 
+    keep_comments_in_prompt: bool = False
+    ) -> Tuple[str, str, str]:
     """ Extracts from one well-formatted `source_code` string the text for:
 
         0) the question text
@@ -150,8 +153,11 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
         # make sure to keep uncaptured text between matches
         # (if no uncaptured text exists, unmatched = '')
         unmatched = source_code[last_end:start]
-        prompt_code += unmatched
-        answer_code += unmatched
+        if current_region:
+            regions[current_region] += unmatched
+        else:
+            prompt_code += unmatched
+            answer_code += unmatched
         
         last_end = end
         
@@ -162,16 +168,12 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
             if current_region:
                 if region_delim != current_region:
                     raise SyntaxError("Region \"{}\" began before \"{}\" ended".format(region_delim, current_region))
-                else:    
-                    if unmatched:
-                        print(unmatched)
+                else:
                     current_region = None
             else:
                 current_region = region_delim
         elif current_region:
-            if unmatched:
-                print(unmatched)
-            print(comment, docstring, string, blank_ans)
+            regions[current_region] += next(filter(bool, match.groups()))
         elif comment:
             special_comment = test(SPECIAL_COMMENT_PATTERN, comment)
 
@@ -204,6 +206,11 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
         
         first_match = False
 
+    # all region delimiters should've been detected.
+    # if there's a current region, it'll never be closed
+    if current_region:
+        raise SyntaxError("File ended before \"" + current_region + "\" ended")
+
     # don't forget everything after the last match!
     unmatched = source_code[last_end:]
     prompt_code += unmatched
@@ -213,6 +220,8 @@ def extract_prompt_ans(source_code: str, keep_comments_in_prompt: bool = False) 
     # usually as a result of removing comments)
     # then remove all indentation
     prompt_code = '\n'.join(filter(bool, map(str.strip, prompt_code.splitlines())))
+
+    print(regions)
 
     return question_text, prompt_code, answer_code
 
