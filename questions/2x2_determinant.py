@@ -12,4 +12,3 @@ $$"""
 def det(a, b, c, d): #0given
     """Calculates the determinant of a 2x2 matrix"""
     return ?a * c + b * d?
-## bad ##

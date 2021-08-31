@@ -315,45 +315,55 @@ class ExportVisitor(NodeVisitor):
         self.names[node.name] = node.type_comment or 'python async function'
 
 def generate_server(setup_code: str, answer_code: str, tab='    ') -> str:
+    """Generates a server file by performing analysis on provided code"""
     setup_names = ExportVisitor.get_names(setup_code)
     answer_names = ExportVisitor.get_names(answer_code)
+
     if not setup_names and not answer_names:
         return SERVER_DEFAULT
     
-    lines = ['# AUTO-GENERATED FILE']
-    lines.append('# go to https://prairielearn.readthedocs.io/en/latest/python-grader/#serverpy for more info')
-    lines.append('')
-    lines.append('def generate(data):')
-    lines.append(tab + '# Define incoming variables here')
-    lines.append(tab + 'names_for_user = [')
+    def format_annotated_name(name: AnnotatedName) -> str:
+        type = name.annotation or 'python var'
+        return '{"name": "' + name.id + '", "description": "", "type": "' + type + '"},'
+    
+    lines = \
+        [ (0, '# AUTO-GENERATED FILE')
+        , (0, '# go to https://prairielearn.readthedocs.io/en/latest/python-grader/#serverpy for more info')
+        , (0, '')
+        , (0, 'def generate(data):')
+        , (1, '# Define incoming variables here')
+        , (1, 'names_for_user = [')
+        ]
+    
     if setup_names:
-        for name in setup_names:
-            type = name.annotation or 'python var'
-            lines.append(tab + tab +'{"name": "' + name.id + '", "description": "", "type": "' + type + '"},')
-        lines[-1] = lines[-1][:-1] # cut off last comma
+        lines.extend((2, format_annotated_name(n)) for n in setup_names)
     else:
-        lines.append('# ex: student recieves a matrix m')
-        lines.append('# {"name": "m", "description": "a 2x2 matrix", "type": "numpy array"}')
-    lines.append(tab + ']')
-    lines.append(tab + '# Define outgoing variables here')
-    lines.append(tab + 'names_from_user = [')
+        lines.append((2, '# ex: student recieves a matrix m'))
+        lines.append((2, '# {"name": "m", "description": "a 2x2 matrix", "type": "numpy array"}'))
+    
+    lines += \
+        [ (1, ']')
+        , (1, '# Define outgoing variables here')
+        , (1, 'names_from_user = [')
+        ]
+    
     if answer_names:
-        for name in answer_names:
-            type = name.annotation or 'python var'
-            lines.append(tab + tab +'{"name": "' + name.id + '", "description": "", "type": "' + type + '"},')
-        lines[-1] = lines[-1][:-1] # cut off last comma
+        lines.extend((2, format_annotated_name(n)) for n in answer_names)
     else:
-        lines.append('# ex: student defines a determinant function name det')
-        lines.append('# {"name": "det", "description": "determinant for a 2x2 matrix", "type": "python function"}')
-    lines.append(tab + ']')
-    lines.append('')
-    lines.append(tab + 'data["params"]["names_for_user"] = names_for_user')
-    lines.append(tab + 'data["params"]["names_from_user"] = names_from_user')
-    lines.append('')
-    lines.append(tab + 'return data')
-    lines.append('')
+        lines.append((2, '# ex: student defines a determinant function name det'))
+        lines.append((2, '# {"name": "det", "description": "determinant for a 2x2 matrix", "type": "python function"}'))
+    
+    lines += \
+        [ (1, ']')
+        , (0, '')
+        , (1, 'data["params"]["names_for_user"] = names_for_user')
+        , (1, 'data["params"]["names_from_user"] = names_from_user')
+        , (0, '')
+        , (1, 'return data')
+        , (0, '')
+        ]
 
-    return '\n'.join(lines)
+    return '\n'.join(tab * n + t for n, t in lines)
 
 def filename(file_path: PathLike[AnyStr]) -> AnyStr:
     """Returns the basename in the path without the file extensions"""
@@ -460,6 +470,7 @@ def generate_many(args: list[str]):
 
         force_json = False
     
+    # pring batch feedback
     if successes + failures > 1:
         if successes:
             Bcolors.printf(Bcolors.OKGREEN, 'Batch completed successfullly on', successes, 'file' + ('' if successes == 1 else 's'), end='')

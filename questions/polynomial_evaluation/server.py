@@ -7,11 +7,11 @@ def generate(data):
         {"name": "a", "description": "", "type": "int"},
         {"name": "b", "description": "", "type": "python var"},
         {"name": "l", "description": "", "type": "list[int]"},
-        {"name": "c", "description": "", "type": "python var"}
+        {"name": "c", "description": "", "type": "python var"},
     ]
     # Define outgoing variables here
     names_from_user = [
-        {"name": "poly", "description": "", "type": "python function"}
+        {"name": "poly", "description": "", "type": "python function"},
     ]
 
     data["params"]["names_for_user"] = names_for_user
