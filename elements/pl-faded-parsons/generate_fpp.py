@@ -3,7 +3,7 @@ from typing import *
 from collections import defaultdict
 from itertools import chain
 from json import dumps
-from os import makedirs, name, path, PathLike
+from os import getcwd, makedirs, path, PathLike
 from re import compile, finditer, match as test
 from shutil import copyfile
 from uuid import uuid4
@@ -437,6 +437,49 @@ def generate_fpp_question(
 
     Bcolors.printf(Bcolors.OKGREEN, 'Done.')
 
+def resolve_source_path(source_path: str) -> str:
+    """ Attempts to find a matching source path in the following destinations:
+
+        ```
+        standard course directory structure:
+        + <course>  
+        | ...        << search here 3rd
+        |-+ elements/pl-faded-parsons
+        | |-generate_fpp.py
+        | | ...      << search here 1st
+        |
+        |-+ questions
+        | | ...      << search here 2nd
+        |
+        ```
+    """
+    if path.exists(source_path):
+        return source_path
+
+    warn = lambda: Bcolors.printf(Bcolors.WARNING, 
+        '- Could not find', original, 
+        'in current directory. Proceeding with detected file. -')
+    
+    original = source_path
+
+    # if this is in 'elements/pl-faded-parsons', back up to course directory
+    h, t0 = path.split(getcwd())
+    _, t1 = path.split(h)
+    if t0 == 'pl-faded-parsons' and t1 == 'elements':
+        # try original in a questions directory on the course level
+        new_path = path.join('..', '..', 'questions', original)
+        if path.exists(new_path):
+            warn()
+            return new_path
+        
+        # try original in course directory
+        new_path = path.join('..', '..', original)
+        if path.exists(new_path):
+            warn()
+            return new_path
+    
+    raise FileNotFoundError('Could not find file at {} or {}.'.format(original, new_path))
+
 def generate_many(args: list[str]):
     if not args:
         raise Exception('Please provide at least one source code path as an argument')
@@ -452,14 +495,7 @@ def generate_many(args: list[str]):
                     'not recognized as a flag! use --help for more info. -')
             continue
         
-        if not path.exists(source_path):
-            original = source_path
-            source_path = path.join('questions', source_path)
-            if not path.exists(source_path):
-                raise FileNotFoundError('Could not find file at {} or {}.'.format(original, source_path))
-            else:
-                Bcolors.printf(Bcolors.WARNING, '- Could not find', original, 
-                    'in current directory. Proceeding with detected file. -')
+        source_path = resolve_source_path(source_path)
 
         try:
             generate_fpp_question(source_path, force_generate_json=force_json)
@@ -504,6 +540,7 @@ def main():
             [ Bcolors.f(Bcolors.OKGREEN, 'A tool for generating faded parsons problems.')
             , ''
             , 'Provide the path to well-formatted python file(s), and a question template will be generated.'
+            , 'This tool will search for a path in ./ ../../questions/ and ../../ before erring'
             , Bcolors.f(Bcolors.OKBLUE, 'Formatting rules:')
             , '- If the file begins with a docstring, it will become the question text'
             , '    - The question text is removed from the answer'
