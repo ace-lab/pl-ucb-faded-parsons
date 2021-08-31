@@ -330,17 +330,25 @@ def generate_server(setup_code: str, answer_code: str, tab='    ') -> str:
     lines.append('def generate(data):')
     lines.append(tab + '# Define incoming variables here')
     lines.append(tab + 'names_for_user = [')
-    for name in setup_names:
-        type = name.annotation or 'python var'
-        lines.append(tab + tab +'{"name": "' + name.id + '", "description": "", "type": "' + type + '"},')
-    lines[-1] = lines[-1][:-1] # cut off last comma
+    if setup_names:
+        for name in setup_names:
+            type = name.annotation or 'python var'
+            lines.append(tab + tab +'{"name": "' + name.id + '", "description": "", "type": "' + type + '"},')
+        lines[-1] = lines[-1][:-1] # cut off last comma
+    else:
+        lines.append('# ex: student recieves a matrix m')
+        lines.append('# {"name": "m", "description": "a 2x2 matrix", "type": "numpy array"}')
     lines.append(tab + ']')
     lines.append(tab + '# Define outgoing variables here')
     lines.append(tab + 'names_from_user = [')
-    for name in answer_names:
-        type = name.annotation or 'python var'
-        lines.append(tab + tab +'{"name": "' + name.id + '", "description": "", "type": "' + type + '"},')
-    lines[-1] = lines[-1][:-1] # cut off last comma
+    if answer_names:
+        for name in answer_names:
+            type = name.annotation or 'python var'
+            lines.append(tab + tab +'{"name": "' + name.id + '", "description": "", "type": "' + type + '"},')
+        lines[-1] = lines[-1][:-1] # cut off last comma
+    else:
+        lines.append('# ex: student defines a determinant function name det')
+        lines.append('# {"name": "det", "description": "determinant for a 2x2 matrix", "type": "python function"}')
     lines.append(tab + ']')
     lines.append('')
     lines.append(tab + 'data["params"]["names_for_user"] = names_for_user')
