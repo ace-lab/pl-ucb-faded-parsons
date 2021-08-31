@@ -1,4 +1,6 @@
 # AUTO-GENERATED FILE
+# go to https://prairielearn.readthedocs.io/en/latest/python-grader/#teststestpy for more info
+
 from pl_helpers import name, points
 from pl_unit_test import PLTestCase
 from code_feedback import Feedback

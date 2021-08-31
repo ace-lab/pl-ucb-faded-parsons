@@ -32,7 +32,7 @@ class Bcolors(Enum):
         print(Bcolors.f(color, *args, sep=sep), **kwargs)
 
 
-TEST_FILE_TEXT = """# AUTO-GENERATED FILE
+TEST_DEFAULT = """# AUTO-GENERATED FILE
 # go to https://prairielearn.readthedocs.io/en/latest/python-grader/#teststestpy for more info
 
 from pl_helpers import name, points
@@ -60,10 +60,10 @@ class Test(PLTestCase):
         
         Feedback.set_score(points)\n"""
 
-SETUP_CODE_FILE_TEXT = """# AUTO-GENERATED FILE
+SETUP_CODE_DEFAULT = """# AUTO-GENERATED FILE
 # go to https://prairielearn.readthedocs.io/en/latest/python-grader/#testssetup_codepy for more info\n"""
 
-SERVER_FILE_TEXT = """# AUTO-GENERATED FILE
+SERVER_DEFAULT = """# AUTO-GENERATED FILE
 def generate(data):
     # Define incoming variables here
     names_for_user = [
@@ -83,9 +83,11 @@ def generate(data):
 
 # Matches, with precedence in listed order:
 MAIN_PATTERN = compile(
-# - capture group 0: (one-line) region delimiter surrounded by ##'s (excluding the ##'s and newline/eof)
-    r'\s*\#\#\s*(.*?)\s*\#\#\s*(?=\#|\r?\n|$)|' +
-# - capture group 1:  (one-line) comment, up to next comment or newline (excluding the newline/eof)
+# - capture group 0: (one-line) region delimiter surrounded by ##'s followed 
+#                    by newline/eof (excluding the ##'s and newline/eof)
+    r'\s*\#\#\s*(.*?)\s*\#\#\s*(?:\#|\r?\n|$)|' +
+# - capture group 1:  (one-line) comment, up to next comment or newline 
+#                     (excluding the newline/eof)
     r'(\#.*?)(?=\#|\r?\n|$)|' +
 # - capture group 2: (multi-line) triple-quote string literal
     r'(\"\"\"[\s\S]*?\"\"\")|' + 
@@ -287,9 +289,6 @@ def generate_fpp_question(source_path: PathLike[AnyStr], force_generate_json: bo
     with open(source_path, 'r') as source:
         source_code = ''.join(source)
         regions = extract_regions(source_code)
-        question_text = regions['question_text']
-        prompt_code = regions['prompt_code']
-        answer_code = regions['answer_code']
     
     question_name = filename(source_path)
 
@@ -309,24 +308,29 @@ def generate_fpp_question(source_path: PathLike[AnyStr], force_generate_json: bo
 
     print('- Populating {} ...'.format(question_dir))
     
+    prompt_code = regions['prompt_code']
+    question_text = regions.get('question_text', None)
     question_html = generate_question_html(prompt_code, question_text=question_text)
     write_to(question_dir, 'question.html', question_html)
     
     json_path = path.join(question_dir, 'info.json')
-    if force_generate_json or not path.exists(json_path):
-        write_to(question_dir, 'info.json', generate_info_json(question_name))
-        Bcolors.printf(Bcolors.WARNING, '  - Overwriting', json_path, '...')
+    json_region = 'info.json' in regions
+    if force_generate_json or json_region or not path.exists(json_path):
+        json_text = regions['info.json'] if json_region else generate_info_json(question_name)
+        write_to(question_dir, 'info.json', json_text)
+        Bcolors.printf(Bcolors.WARNING, '  - Overwriting', json_path, 
+            'using \"info.json\" region...' if json_region else '...')
 
-    write_to(question_dir, 'server.py',  SERVER_FILE_TEXT)
+    write_to(question_dir, 'server.py', regions.get('server', SERVER_DEFAULT))
     
 
     print('- Populating {} ...'.format(test_dir))
 
-    write_to(test_dir, 'ans.py', answer_code)
+    write_to(test_dir, 'ans.py', regions['answer_code'])
     
-    write_to(test_dir, 'setup_code.py', SETUP_CODE_FILE_TEXT)
+    write_to(test_dir, 'setup_code.py', regions.get('setup_code', SETUP_CODE_DEFAULT))
 
-    write_to(test_dir, 'test.py', TEST_FILE_TEXT)
+    write_to(test_dir, 'test.py', regions.get('test', TEST_DEFAULT))
     
 
     Bcolors.printf(Bcolors.OKGREEN, 'Done.')
