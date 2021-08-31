@@ -223,7 +223,8 @@
        'first_error_only': true,
        'max_wrong_lines': 10,
        'lang': 'en',
-       'onSortableUpdate': (event, ui) => {}
+       'onSortableUpdate': (event, ui) => {},
+       'onBlankUpdate': (event, codeline) => {},
      };
 
      this.options = jQuery.extend({}, defaults, options);
@@ -763,7 +764,7 @@
         }
         inputFieldName = codeline.id.toString() + '-' + numBlanksThisLine.toString();
         codeline.code = codeline.code.replace(/!BLANK/, function() {
-          return('<input type="text" class="text-box" ' +
+          return('<input type="text" class="text-box parsons-blank" ' +
                  'name="' + inputFieldName + '" ' +
                  'value="' + replaceText + '".>');
         });
@@ -846,6 +847,12 @@
      $.each(solutionIDs, function(index, id) {
        that.updateHTMLIndent(id);
      })
+     // set up event listeners on input fields for blanks
+     $('input.parsons-blank').each(function (_index, item) { 
+        item.addEventListener('input', function(e) {
+          that.options.onBlankUpdate(item, e);
+        });
+     });
      // Log the original codelines in the exercise in order to be able to
      // match the input/output hashes to the code later on. We need only a
      // few properties of the codeline objects
