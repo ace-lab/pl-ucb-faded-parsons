@@ -1,4 +1,6 @@
 # AUTO-GENERATED FILE
+# go to https://prairielearn.readthedocs.io/en/latest/python-grader/#serverpy for more info
+
 def generate(data):
     # Define incoming variables here
     names_for_user = [

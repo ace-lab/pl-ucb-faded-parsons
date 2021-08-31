@@ -1,14 +1,19 @@
+from typing import *
+
 from collections import defaultdict
+from itertools import chain
 from json import dumps
-from os import makedirs, path, PathLike
+from os import makedirs, name, path, PathLike
 from re import compile, finditer, match as test
 from shutil import copyfile
-from typing import *
 from uuid import uuid4
+from ast import parse, unparse, Assign, AnnAssign, FunctionDef, AsyncFunctionDef, NodeVisitor, Name
+
+from dataclasses import dataclass
 
 # TODO(LBC):
 # - make unused regions generate files in appropriate places/warn
-# - figure out how to indicate server.py fields
+# - figure out how to indicate server.py fields: ast.parse?, decorators?
 
 class Bcolors:
     # https://stackoverflow.com/questions/287871/how-to-print-colored-text-to-the-terminal
@@ -276,6 +281,76 @@ def generate_info_json(question_name: str, indent=4) -> str:
 
     return dumps(info_json, indent=indent) + '\n'
 
+@dataclass(init=True, repr=True, frozen=True)
+class AnnotatedName:
+    id: str
+    annotation: str = None
+
+class ExportVisitor(NodeVisitor):
+    @staticmethod
+    def get_names(code):
+        visitor = ExportVisitor()
+        visitor.visit(parse(code))
+        return [AnnotatedName(n, annotation=a) for n, a in visitor.names.items()]
+    
+    def __init__(self) -> None:
+        super().__init__()
+        self.names: dict[str, str] = dict()
+        self.annotation = None
+
+    def visit_Assign(self, node: Assign) -> Any:
+        for t in node.targets:
+            if isinstance(t, Name) and t.id not in self.names:
+                self.names[t.id] = None
+    
+    def visit_AnnAssign(self, node: AnnAssign) -> Any:
+        key = node.target.id
+        if node.simple:
+            # use unparse to stringify compound types like list[int]
+            # and simple types like int
+            self.names[key] = unparse(node.annotation)
+        elif key not in self.names:
+            self.names[key] = None
+    
+    def visit_FunctionDef(self, node: FunctionDef) -> Any:
+        self.names[node.name] = node.type_comment or 'python function'
+
+    def visit_AsyncFunctionDef(self, node: AsyncFunctionDef) -> Any:
+        self.names[node.name] = node.type_comment or 'python async function'
+
+def generate_server(setup_code: str, answer_code: str, tab='    ') -> str:
+    setup_names = ExportVisitor.get_names(setup_code)
+    answer_names = ExportVisitor.get_names(answer_code)
+    if not setup_names and not answer_names:
+        return SERVER_DEFAULT
+    
+    lines = ['# AUTO-GENERATED FILE']
+    lines.append('# go to https://prairielearn.readthedocs.io/en/latest/python-grader/#serverpy for more info')
+    lines.append('')
+    lines.append('def generate(data):')
+    lines.append(tab + '# Define incoming variables here')
+    lines.append(tab + 'names_for_user = [')
+    for name in setup_names:
+        type = name.annotation or 'python var'
+        lines.append(tab + tab +'{"name": "' + name.id + '", "description": "", "type": "' + type + '"},')
+    lines[-1] = lines[-1][:-1] # cut off last comma
+    lines.append(tab + ']')
+    lines.append(tab + '# Define outgoing variables here')
+    lines.append(tab + 'names_from_user = [')
+    for name in answer_names:
+        type = name.annotation or 'python var'
+        lines.append(tab + tab +'{"name": "' + name.id + '", "description": "", "type": "' + type + '"},')
+    lines[-1] = lines[-1][:-1] # cut off last comma
+    lines.append(tab + ']')
+    lines.append('')
+    lines.append(tab + 'data["params"]["names_for_user"] = names_for_user')
+    lines.append(tab + 'data["params"]["names_from_user"] = names_from_user')
+    lines.append('')
+    lines.append(tab + 'return data')
+    lines.append('')
+
+    return '\n'.join(lines)
+
 def filename(file_path: PathLike[AnyStr]) -> AnyStr:
     """Returns the basename in the path without the file extensions"""
     return path.splitext(path.basename(file_path))[0]
@@ -326,14 +401,17 @@ def generate_fpp_question(source_path: PathLike[AnyStr], force_generate_json: bo
         Bcolors.printf(Bcolors.WARNING, '  - Overwriting', json_path, 
             'using \"info.json\" region...' if json_region else '...')
 
-    write_to(question_dir, 'server.py', regions.get('server', SERVER_DEFAULT))
-    
+    setup_code = regions.get('setup_code', SETUP_CODE_DEFAULT)
+    answer_code = regions['answer_code']
+
+    write_to(question_dir, 'server.py', regions.get('server', generate_server(setup_code, answer_code)))
+
 
     print('- Populating {} ...'.format(test_dir))
 
-    write_to(test_dir, 'ans.py', regions['answer_code'])
+    write_to(test_dir, 'ans.py', answer_code)
     
-    write_to(test_dir, 'setup_code.py', regions.get('setup_code', SETUP_CODE_DEFAULT))
+    write_to(test_dir, 'setup_code.py', setup_code)
 
     write_to(test_dir, 'test.py', regions.get('test', TEST_DEFAULT))
     

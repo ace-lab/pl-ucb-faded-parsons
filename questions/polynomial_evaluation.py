@@ -3,10 +3,13 @@ polynomial with the given coefficients at the given value of <code>x</code>,
 ie, evaluate $$f(x) = \sum_i \textrm{coeffs}_i ~ x^i$$"""
 
 ## setup_code ##
-a = 3
+a: int = 3
 b = a + 4
+l: list[int] = [1, 2, 3]
+c = l[0] = 3
 ## setup_code ##
 
+print(l)
 def poly(coeffs, x): #0given
     # Keep track of the total as we iterate through each term.
     # Each term is of the form coeff*(x**power).
