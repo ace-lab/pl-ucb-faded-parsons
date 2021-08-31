@@ -33,6 +33,8 @@ class Bcolors(Enum):
 
 
 TEST_FILE_TEXT = """# AUTO-GENERATED FILE
+# go to https://prairielearn.readthedocs.io/en/latest/python-grader/#teststestpy for more info
+
 from pl_helpers import name, points
 from pl_unit_test import PLTestCase
 from code_feedback import Feedback
@@ -58,7 +60,8 @@ class Test(PLTestCase):
         
         Feedback.set_score(points)\n"""
 
-SETUP_CODE_FILE_TEXT = '# AUTO-GENERATED FILE\n'
+SETUP_CODE_FILE_TEXT = """# AUTO-GENERATED FILE
+# go to https://prairielearn.readthedocs.io/en/latest/python-grader/#testssetup_codepy for more info\n"""
 
 SERVER_FILE_TEXT = """# AUTO-GENERATED FILE
 def generate(data):
@@ -393,6 +396,10 @@ def main():
             , '- Comments are removed from the prompt *unless*'
             , '    - The comment is of the form `#{n}given` or `#blank`,' 
             , '      which are the only comments removed from the answer'
+            , '- Custom regions are begun and ended by `## {region name} ##`'
+            , '    - A maximum of one region may be open at a time'
+            , '    - All text in a region is only copied into that region'
+            , '    - Regions must be closed before the end of the source string'
             , ''
             , Bcolors.f(Bcolors.OKBLUE, 'Flags:')
             , ' -h/--help: prints this guide'
