@@ -363,13 +363,17 @@ def write_to(parent_dir: PathLike[AnyStr], file_path: PathLike[AnyStr], data: st
     with open(path.join(parent_dir, file_path), 'w+') as f:
         f.write(data)
 
-def generate_fpp_question(source_path: PathLike[AnyStr], force_generate_json: bool = False):
+def generate_fpp_question(
+    source_path: PathLike[AnyStr], 
+    force_generate_json: bool = False,
+    log_details=True):
     """ Takes a path of a well-formatted source (see `extract_prompt_ans`),
         then generates and populates a question directory of the same name.
     """
     Bcolors.printf(Bcolors.OKBLUE, 'Generating from source', source_path)
 
-    print('- Extracting from source...')
+    if log_details:
+        print('- Extracting from source...')
     with open(source_path, 'r') as source:
         source_code = ''.join(source)
         regions = extract_regions(source_code)
@@ -380,17 +384,18 @@ def generate_fpp_question(source_path: PathLike[AnyStr], force_generate_json: bo
     # sibling of the source file in the filesystem
     question_dir = path.join(path.dirname(source_path), question_name)
 
-    print('- Creating destination directories...')
+    if log_details:
+        print('- Creating destination directories...')
     test_dir = path.join(question_dir, 'tests')
     makedirs(test_dir, exist_ok=True)
 
-
     copy_dest_path = path.join(question_dir, 'source.py')
-    print('- Copying {} to {} ...'.format(path.basename(source_path), copy_dest_path))
+    if log_details:
+        print('- Copying {} to {} ...'.format(path.basename(source_path), copy_dest_path))
     copyfile(source_path, copy_dest_path)
 
-
-    print('- Populating {} ...'.format(question_dir))
+    if log_details:
+        print('- Populating {} ...'.format(question_dir))
     
     prompt_code = regions['prompt_code']
     question_text = regions.get('question_text', None)
@@ -410,8 +415,8 @@ def generate_fpp_question(source_path: PathLike[AnyStr], force_generate_json: bo
 
     write_to(question_dir, 'server.py', regions.get('server', generate_server(setup_code, answer_code)))
 
-
-    print('- Populating {} ...'.format(test_dir))
+    if log_details:
+        print('- Populating {} ...'.format(test_dir))
 
     write_to(test_dir, 'ans.py', answer_code)
     
@@ -427,7 +432,7 @@ def generate_many(args: list[str]):
         raise Exception('Please provide at least one source code path as an argument')
 
     force_json = False
-    successes = 0
+    successes, failures = 0, 0
     for source_path in args:
         if source_path.startswith('--'):
             if source_path.endswith('force-json'):
@@ -451,11 +456,19 @@ def generate_many(args: list[str]):
             successes += 1
         except SyntaxError as e:
             Bcolors.printf(Bcolors.FAIL, 'SyntaxError:', e.msg, 'in', source_path)
+            failures += 1
 
         force_json = False
     
-    if len(args) > 2:
-        Bcolors.printf(Bcolors.OKGREEN, 'Batch completed successfullly on', successes, 'files.')
+    if successes + failures > 1:
+        if successes:
+            Bcolors.printf(Bcolors.OKGREEN, 'Batch completed successfullly on', successes, 'file' + ('' if successes == 1 else 's'), end='')
+            if failures:
+                Bcolors.printf(Bcolors.FAIL, ' and failed on', failures, 'file' + ('' if failures == 1 else 's'))
+            else:
+                print('.')
+        else:
+            Bcolors.printf(Bcolors.FAIL, 'Batch failed on all', failures, 'files.')
 
 def profile_generate_many(args: list[str]):
     from cProfile import Profile
