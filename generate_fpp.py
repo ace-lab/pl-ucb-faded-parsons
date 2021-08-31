@@ -1,13 +1,16 @@
 from collections import defaultdict
-from typing import *
-from re import compile, finditer, match as test
-from os import makedirs, path, PathLike
-from shutil import copyfile
-from uuid import uuid4
 from json import dumps
-from enum import Enum, unique
+from os import makedirs, path, PathLike
+from re import compile, finditer, match as test
+from shutil import copyfile
+from typing import *
+from uuid import uuid4
 
-class Bcolors(Enum):
+# TODO(LBC):
+# - make unused regions generate files in appropriate places/warn
+# - figure out how to indicate server.py fields
+
+class Bcolors:
     # https://stackoverflow.com/questions/287871/how-to-print-colored-text-to-the-terminal
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -21,7 +24,7 @@ class Bcolors(Enum):
 
     @staticmethod
     def f(color, *args, sep=' '):
-        return color.value + sep.join(map(str, args)) + Bcolors.ENDC.value
+        return color + sep.join(map(str, args)) + Bcolors.ENDC
 
     @staticmethod
     def printf(color, *args, **kwargs):
@@ -64,6 +67,8 @@ SETUP_CODE_DEFAULT = """# AUTO-GENERATED FILE
 # go to https://prairielearn.readthedocs.io/en/latest/python-grader/#testssetup_codepy for more info\n"""
 
 SERVER_DEFAULT = """# AUTO-GENERATED FILE
+# go to https://prairielearn.readthedocs.io/en/latest/python-grader/#serverpy for more info
+
 def generate(data):
     # Define incoming variables here
     names_for_user = [
