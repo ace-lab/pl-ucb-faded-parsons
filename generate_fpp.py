@@ -284,7 +284,7 @@ class AnnotatedName:
 
 class ExportVisitor(NodeVisitor):
     @staticmethod
-    def get_names(code):
+    def get_names(code: str) -> list[AnnotatedName]:
         visitor = ExportVisitor()
         visitor.visit(parse(code))
         return [AnnotatedName(n, annotation=a) for n, a in visitor.names.items()]
@@ -427,7 +427,7 @@ def generate_many(args: list[str]):
         raise Exception('Please provide at least one source code path as an argument')
 
     force_json = False
-    files = 0
+    successes = 0
     for source_path in args:
         if source_path.startswith('--'):
             if source_path.endswith('force-json'):
@@ -446,12 +446,16 @@ def generate_many(args: list[str]):
                 Bcolors.printf(Bcolors.WARNING, '- Could not find', original, 
                     'in current directory. Proceeding with detected file. -')
 
-        generate_fpp_question(source_path, force_generate_json=force_json)
-        files += 1
+        try:
+            generate_fpp_question(source_path, force_generate_json=force_json)
+            successes += 1
+        except SyntaxError as e:
+            Bcolors.printf(Bcolors.FAIL, 'SyntaxError:', e.msg, 'in', source_path)
+
         force_json = False
     
     if len(args) > 2:
-        Bcolors.printf(Bcolors.OKGREEN, 'Batch completed successfullly on', files, 'files.')
+        Bcolors.printf(Bcolors.OKGREEN, 'Batch completed successfullly on', successes, 'files.')
 
 def profile_generate_many(args: list[str]):
     from cProfile import Profile
