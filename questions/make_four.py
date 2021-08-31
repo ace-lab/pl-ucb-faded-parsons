@@ -4,3 +4,8 @@ a = 1
 a += 1
 a *= 1
 ?a? += a
+
+## res/four.txt ##
+4
+
+## res/four.txt ##

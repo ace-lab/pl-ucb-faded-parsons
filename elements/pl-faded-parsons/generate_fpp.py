@@ -384,6 +384,7 @@ def generate_fpp_question(
 
     if log_details:
         print('- Extracting from source...')
+    
     with open(source_path, 'r') as source:
         source_code = ''.join(source)
         regions = extract_regions(source_code)
@@ -403,6 +404,7 @@ def generate_fpp_question(
 
     if log_details:
         print('- Creating destination directories...')
+    
     test_dir = path.join(question_dir, 'tests')
     makedirs(test_dir, exist_ok=True)
 
@@ -441,9 +443,25 @@ def generate_fpp_question(
 
     write_to(test_dir, 'test.py', remove_region('test', TEST_DEFAULT))
 
-    # TODO(LBC): make these generate files
-    for k, _ in regions.items():
-        Bcolors.printf(Bcolors.WARNING, 'Unused region:', k)
+    if regions:
+        Bcolors.printf(Bcolors.WARNING, '- Writing unrecognized regions:')
+    
+    for raw_path, data in regions.items():
+        if not raw_path:
+            Bcolors.printf(Bcolors.WARNING, '  - Skipping anonymous region!')
+            continue
+
+        # if no file extension is given, give it .py
+        if not path.splitext(path.basename(raw_path))[1]:
+            raw_path += '.py'
+        
+        # ensure that the directories exist before writing
+        final_path = path.join(question_dir, raw_path)
+        makedirs(path.dirname(final_path), exist_ok=True)
+        Bcolors.printf(Bcolors.WARNING, '  -', final_path, '...')
+
+        # write files
+        write_to(question_dir, raw_path, data)
 
     Bcolors.printf(Bcolors.OKGREEN, 'Done.')
 
