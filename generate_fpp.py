@@ -13,7 +13,6 @@ from dataclasses import dataclass
 
 # TODO(LBC):
 # - make unused regions generate files in appropriate places/warn
-# - figure out how to indicate server.py fields: ast.parse?, decorators?
 
 class Bcolors:
     # https://stackoverflow.com/questions/287871/how-to-print-colored-text-to-the-terminal
@@ -116,12 +115,9 @@ REGION_COMMENT_PATTERN = compile(r'')
 
 BLANK_SUBSTITUTE = '!BLANK'
 
-def extract_regions(
-    source_code: str, 
-    keep_comments_in_prompt: bool = False
-    ) -> Dict[str, str]:
+def extract_regions(source_code: str, keep_comments_in_prompt: bool = False) -> Dict[str, str]:
     """ Extracts from well-formatted `source_code` string the text for the question, 
-        the problem starting code, the answer code, and any other defined regions
+        the problem starting code, the answer code, and any other custom regions
 
         Formatting rules:
         - If the file begins with a docstring, it will become the `question_text` region

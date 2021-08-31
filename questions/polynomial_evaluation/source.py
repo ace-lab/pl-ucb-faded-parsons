@@ -9,7 +9,6 @@ l: list[int] = [1, 2, 3]
 c = l[0] = 3
 ## setup_code ##
 
-print(l)
 def poly(coeffs, x): #0given
     # Keep track of the total as we iterate through each term.
     # Each term is of the form coeff*(x**power).

@@ -1,4 +1,3 @@
-print(l)
 def poly(coeffs, x): 
     # Keep track of the total as we iterate through each term.
     # Each term is of the form coeff*(x**power).
