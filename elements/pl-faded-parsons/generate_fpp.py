@@ -388,6 +388,13 @@ def generate_fpp_question(
         source_code = ''.join(source)
         regions = extract_regions(source_code)
     
+    def remove_region(key, default=''):
+        if key in regions:
+            v = regions[key]
+            del regions[key]
+            return v
+        return default
+
     question_name = filename(source_path)
 
     # create all new content in a new folder that is a
@@ -407,23 +414,23 @@ def generate_fpp_question(
     if log_details:
         print('- Populating {} ...'.format(question_dir))
     
-    prompt_code = regions['prompt_code']
-    question_text = regions.get('question_text', None)
+    prompt_code = remove_region('prompt_code')
+    question_text = remove_region('question_text')
     question_html = generate_question_html(prompt_code, question_text=question_text)
     write_to(question_dir, 'question.html', question_html)
     
     json_path = path.join(question_dir, 'info.json')
-    json_region = 'info.json' in regions
+    json_region = remove_region('info.json')
     if force_generate_json or json_region or not path.exists(json_path):
         json_text = regions['info.json'] if json_region else generate_info_json(question_name)
         write_to(question_dir, 'info.json', json_text)
         Bcolors.printf(Bcolors.WARNING, '  - Overwriting', json_path, 
             'using \"info.json\" region...' if json_region else '...')
 
-    setup_code = regions.get('setup_code', SETUP_CODE_DEFAULT)
-    answer_code = regions['answer_code']
+    setup_code = remove_region('setup_code', SETUP_CODE_DEFAULT)
+    answer_code = remove_region('answer_code')
 
-    write_to(question_dir, 'server.py', regions.get('server', generate_server(setup_code, answer_code)))
+    write_to(question_dir, 'server.py', remove_region('server') or generate_server(setup_code, answer_code))
 
     if log_details:
         print('- Populating {} ...'.format(test_dir))
@@ -432,8 +439,11 @@ def generate_fpp_question(
     
     write_to(test_dir, 'setup_code.py', setup_code)
 
-    write_to(test_dir, 'test.py', regions.get('test', TEST_DEFAULT))
-    
+    write_to(test_dir, 'test.py', remove_region('test', TEST_DEFAULT))
+
+    # TODO(LBC): make these generate files
+    for k, _ in regions.items():
+        Bcolors.printf(Bcolors.WARNING, 'Unused region:', k)
 
     Bcolors.printf(Bcolors.OKGREEN, 'Done.')
 
