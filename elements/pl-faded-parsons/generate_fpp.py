@@ -93,26 +93,23 @@ def generate(data):
 
 # Matches, with precedence in listed order:
 MAIN_PATTERN: Final = compile(
-# - capture group 0: (one-line) region delimiter surrounded by ##'s followed 
-#                    by newline/eof (excluding the ##'s and newline/eof)
+    # - capture group 0: (one-line) region delimiter surrounded by ##'s followed 
+    #                    by newline/eof (excluding the ##'s and newline/eof)
     r'\s*\#\#\s*(.*?)\s*\#\#\s*(?:\#|\r?\n|$)|' +
-# - capture group 1:  (one-line) comment, up to next comment or newline 
-#                     (excluding the newline/eof)
+    # - capture group 1:  (one-line) comment, up to next comment or newline 
+    #                     (excluding the newline/eof)
     r'(\#.*?)(?=\#|\r?\n|$)|' +
-# - capture group 2: (multi-line) triple-quote string literal
+    # - capture group 2: (multi-line) triple-quote string literal
     r'(\"\"\"[\s\S]*?\"\"\")|' + 
-# - capture group 3:
-#     - (one-line) single-apostrophe string literal
-#     - (one-line) single-quote string literal
+    # - capture group 3:
+    #     - (one-line) single-apostrophe string literal
+    #     - (one-line) single-quote string literal
     r'(\'.*?\'|\".*?\")|' + 
-# - capture group 4:  (one-line) answer surrounded by ?'s (excluding the ?'s)
+    # - capture group 4:  (one-line) answer surrounded by ?'s (excluding ?'s)
     r'\?(.*?)\?'
 )
 
 SPECIAL_COMMENT_PATTERN: Final = compile(r'^#(blank[^#]*|\d+given)\s*')
-
-# capture group: region name
-REGION_COMMENT_PATTERN: Final = compile(r'')
 
 BLANK_SUBSTITUTE: Final = '!BLANK'
 
