@@ -39,6 +39,10 @@ class Bcolors:
     def warn(*args, **kwargs):
         Bcolors.printf(Bcolors.WARNING, *args, **kwargs)
 
+    @staticmethod
+    def fail(*args, **kwargs):
+        Bcolors.printf(Bcolors.FAIL, *args, **kwargs)
+
 
 TEST_DEFAULT: Final = """# AUTO-GENERATED FILE
 # go to https://prairielearn.readthedocs.io/en/latest/python-grader/#teststestpy for more info
@@ -552,24 +556,25 @@ def generate_many(args: list[str]):
             generate_fpp_question(source_path, force_generate_json=force_json)
             successes += 1
         except SyntaxError as e:
-            Bcolors.printf(Bcolors.FAIL, 'SyntaxError:', e.msg, 'in', source_path)
+            Bcolors.fail('SyntaxError:', e.msg, 'in', source_path)
             failures += 1
         except FileNotFoundError:
-            Bcolors.printf(Bcolors.FAIL, 'FileNotFoundError:', source_path)
+            Bcolors.fail('FileNotFoundError:', source_path)
             failures += 1
 
         force_json = False
     
-    # pring batch feedback
+    # print batch feedback
     if successes + failures > 1:
+        n_files = lambda n: str(n) + ' file' + ('' if n == 1 else 's')
         if successes:
-            Bcolors.printf(Bcolors.OKGREEN, 'Batch completed successfullly on', successes, 'file' + ('' if successes == 1 else 's'), end='')
+            Bcolors.printf(Bcolors.OKGREEN, 'Batch completed successfullly on', n_files(successes), end='')
             if failures:
-                Bcolors.printf(Bcolors.FAIL, ' and failed on', failures, 'file' + ('' if failures == 1 else 's'))
+                Bcolors.fail(' and failed on', n_files(failures))
             else:
-                print('.')
+                print()
         else:
-            Bcolors.printf(Bcolors.FAIL, 'Batch failed on all', failures, 'files.')
+            Bcolors.fail('Batch failed on all', n_files(failures))
 
 def profile_generate_many(args: list[str]):
     from cProfile import Profile
