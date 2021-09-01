@@ -279,10 +279,13 @@ class AnnotatedName:
     id: str
     annotation: str = None
 
-class ExportVisitor(ast.NodeVisitor):
+class GlobalNameVisitor(ast.NodeVisitor):
     @staticmethod
     def get_names(code: str) -> list[AnnotatedName]:
-        visitor = ExportVisitor()
+        if not code:
+            return list()
+        
+        visitor = GlobalNameVisitor()
         visitor.visit(ast.parse(code))
         return [AnnotatedName(n, annotation=a) for n, a in visitor.names.items()]
     
@@ -313,8 +316,8 @@ class ExportVisitor(ast.NodeVisitor):
 
 def generate_server(setup_code: str, answer_code: str, tab='    ') -> str:
     """Generates a server file by performing analysis on provided code"""
-    setup_names = ExportVisitor.get_names(setup_code)
-    answer_names = ExportVisitor.get_names(answer_code)
+    setup_names = GlobalNameVisitor.get_names(setup_code)
+    answer_names = GlobalNameVisitor.get_names(answer_code)
 
     if not setup_names and not answer_names:
         return SERVER_DEFAULT
