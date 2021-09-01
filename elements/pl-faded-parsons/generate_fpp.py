@@ -6,7 +6,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from json import dumps
 from os import getcwd, makedirs, path, PathLike
-from re import compile, escape, finditer, match as test
+from re import compile, finditer, match as test
 from shutil import copyfile
 from uuid import uuid4
 
