@@ -424,7 +424,7 @@ def generate_fpp_question(
     json_path = path.join(question_dir, 'info.json')
     json_region = remove_region('info.json')
     if force_generate_json or json_region or not path.exists(json_path):
-        json_text = regions['info.json'] if json_region else generate_info_json(question_name)
+        json_text = json_region or generate_info_json(question_name)
         write_to(question_dir, 'info.json', json_text)
         Bcolors.printf(Bcolors.WARNING, '  - Overwriting', json_path, 
             'using \"info.json\" region...' if json_region else '...')
