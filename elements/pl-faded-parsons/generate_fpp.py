@@ -385,9 +385,13 @@ def generate_server(setup_code: str, answer_code: str, tab='    ') -> str:
 
     return '\n'.join(tab * n + t for n, t in lines)
 
-def filename(file_path: PathLike[AnyStr]) -> AnyStr:
+def file_name(file_path: PathLike[AnyStr]) -> AnyStr:
     """Returns the basename in the path without the file extensions"""
     return path.splitext(path.basename(file_path))[0]
+
+def file_ext(file_path: PathLike[AnyStr]) -> AnyStr:
+    """Returns the basename in the path without the file extensions"""
+    return path.splitext(path.basename(file_path))[1]
 
 def write_to(parent_dir: PathLike[AnyStr], file_path: PathLike[AnyStr], data: str):
     with open(path.join(parent_dir, file_path), 'w+') as f:
@@ -416,7 +420,7 @@ def generate_fpp_question(
             return v
         return default
 
-    question_name = filename(source_path)
+    question_name = file_name(source_path)
 
     # create all new content in a new folder that is a
     # sibling of the source file in the filesystem
@@ -472,7 +476,7 @@ def generate_fpp_question(
             continue
 
         # if no file extension is given, give it .py
-        if not path.splitext(path.basename(raw_path))[1]:
+        if not file_ext(raw_path):
             raw_path += '.py'
         
         # ensure that the directories exist before writing
