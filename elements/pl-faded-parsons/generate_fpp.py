@@ -1,18 +1,15 @@
 from typing import *
 
+import ast
+
 from collections import defaultdict
-from itertools import chain
+from dataclasses import dataclass
 from json import dumps
 from os import getcwd, makedirs, path, PathLike
 from re import compile, finditer, match as test
 from shutil import copyfile
 from uuid import uuid4
-from ast import parse, unparse, Assign, AnnAssign, FunctionDef, AsyncFunctionDef, NodeVisitor, Name
 
-from dataclasses import dataclass
-
-# TODO(LBC):
-# - make unused regions generate files in appropriate places/warn
 
 class Bcolors:
     # https://stackoverflow.com/questions/287871/how-to-print-colored-text-to-the-terminal
@@ -282,11 +279,11 @@ class AnnotatedName:
     id: str
     annotation: str = None
 
-class ExportVisitor(NodeVisitor):
+class ExportVisitor(ast.NodeVisitor):
     @staticmethod
     def get_names(code: str) -> list[AnnotatedName]:
         visitor = ExportVisitor()
-        visitor.visit(parse(code))
+        visitor.visit(ast.parse(code))
         return [AnnotatedName(n, annotation=a) for n, a in visitor.names.items()]
     
     def __init__(self) -> None:
@@ -294,24 +291,24 @@ class ExportVisitor(NodeVisitor):
         self.names: dict[str, str] = dict()
         self.annotation = None
 
-    def visit_Assign(self, node: Assign) -> Any:
+    def visit_Assign(self, node: ast.Assign) -> Any:
         for t in node.targets:
-            if isinstance(t, Name) and t.id not in self.names:
+            if isinstance(t, ast.Name) and t.id not in self.names:
                 self.names[t.id] = None
     
-    def visit_AnnAssign(self, node: AnnAssign) -> Any:
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> Any:
         key = node.target.id
         if node.simple:
             # use unparse to stringify compound types like list[int]
             # and simple types like int
-            self.names[key] = unparse(node.annotation)
+            self.names[key] = ast.unparse(node.annotation)
         elif key not in self.names:
             self.names[key] = None
     
-    def visit_FunctionDef(self, node: FunctionDef) -> Any:
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
         self.names[node.name] = node.type_comment or 'python function'
 
-    def visit_AsyncFunctionDef(self, node: AsyncFunctionDef) -> Any:
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> Any:
         self.names[node.name] = node.type_comment or 'python async function'
 
 def generate_server(setup_code: str, answer_code: str, tab='    ') -> str:
