@@ -35,6 +35,10 @@ class Bcolors:
             del kwargs['sep']
         print(Bcolors.f(color, *args, sep=sep), **kwargs)
 
+    @staticmethod
+    def warn(*args, **kwargs):
+        Bcolors.printf(Bcolors.WARNING, *args, **kwargs)
+
 
 TEST_DEFAULT = """# AUTO-GENERATED FILE
 # go to https://prairielearn.readthedocs.io/en/latest/python-grader/#teststestpy for more info
@@ -426,7 +430,7 @@ def generate_fpp_question(
     if force_generate_json or json_region or not path.exists(json_path):
         json_text = json_region or generate_info_json(question_name)
         write_to(question_dir, 'info.json', json_text)
-        Bcolors.printf(Bcolors.WARNING, '  - Overwriting', json_path, 
+        Bcolors.warn('  - Overwriting', json_path, 
             'using \"info.json\" region...' if json_region else '...')
 
     setup_code = remove_region('setup_code', SETUP_CODE_DEFAULT)
@@ -444,11 +448,11 @@ def generate_fpp_question(
     write_to(test_dir, 'test.py', remove_region('test', TEST_DEFAULT))
 
     if regions:
-        Bcolors.printf(Bcolors.WARNING, '- Writing unrecognized regions:')
+        Bcolors.warn('- Writing unrecognized regions:')
     
     for raw_path, data in regions.items():
         if not raw_path:
-            Bcolors.printf(Bcolors.WARNING, '  - Skipping anonymous region!')
+            Bcolors.warn('  - Skipping anonymous region!')
             continue
 
         # if no file extension is given, give it .py
@@ -458,7 +462,7 @@ def generate_fpp_question(
         # ensure that the directories exist before writing
         final_path = path.join(question_dir, raw_path)
         makedirs(path.dirname(final_path), exist_ok=True)
-        Bcolors.printf(Bcolors.WARNING, '  -', final_path, '...')
+        Bcolors.warn('  -', final_path, '...')
 
         # write files
         write_to(question_dir, raw_path, data)
@@ -484,7 +488,7 @@ def resolve_source_path(source_path: str) -> str:
     if path.exists(source_path):
         return source_path
 
-    warn = lambda: Bcolors.printf(Bcolors.WARNING, 
+    warn = lambda: Bcolors.warn(
         '- Could not find', original, 
         'in current directory. Proceeding with detected file. -')
     
@@ -519,7 +523,7 @@ def generate_many(args: list[str]):
             if source_path.endswith('force-json'):
                 force_json = True
             else:
-                Bcolors.printf(Bcolors.WARNING, '-', source_path, 
+                Bcolors.warn('-', source_path, 
                     'not recognized as a flag! use --help for more info. -')
             continue
         
