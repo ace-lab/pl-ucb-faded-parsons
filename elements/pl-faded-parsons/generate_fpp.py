@@ -6,7 +6,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from json import dumps
 from os import getcwd, makedirs, path, PathLike
-from re import compile, finditer, match as test
+from re import compile, escape, finditer, match as test
 from shutil import copyfile
 from uuid import uuid4
 
@@ -320,8 +320,17 @@ class GlobalNameVisitor(ast.NodeVisitor):
 
 def generate_server(setup_code: str, answer_code: str, tab='    ') -> str:
     """Generates a server file by performing analysis on provided code"""
-    setup_names = GlobalNameVisitor.get_names(setup_code)
-    answer_names = GlobalNameVisitor.get_names(answer_code)
+    try:
+        setup_names = GlobalNameVisitor.get_names(setup_code)
+    except SyntaxError as e:
+        Bcolors.warn('Could not extract exports from setup: SyntaxError:', e.msg)
+        setup_names = []
+
+    try:
+        answer_names = GlobalNameVisitor.get_names(answer_code)
+    except SyntaxError as e:
+        Bcolors.warn('Could not extract exports from answer: SyntaxError:', e.msg)
+        answer_names = []
 
     if not setup_names and not answer_names:
         return SERVER_DEFAULT
