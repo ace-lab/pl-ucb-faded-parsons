@@ -10,6 +10,7 @@ from re import compile, escape, finditer, match as test
 from shutil import copyfile
 from uuid import uuid4
 
+# TODO(LBC): figure out why consecutive regions break
 
 class Bcolors:
     # https://stackoverflow.com/questions/287871/how-to-print-colored-text-to-the-terminal
