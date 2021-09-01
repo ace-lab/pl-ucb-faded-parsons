@@ -40,7 +40,7 @@ class Bcolors:
         Bcolors.printf(Bcolors.WARNING, *args, **kwargs)
 
 
-TEST_DEFAULT = """# AUTO-GENERATED FILE
+TEST_DEFAULT: Final = """# AUTO-GENERATED FILE
 # go to https://prairielearn.readthedocs.io/en/latest/python-grader/#teststestpy for more info
 
 from pl_helpers import name, points
@@ -68,10 +68,10 @@ class Test(PLTestCase):
         
         Feedback.set_score(points)\n"""
 
-SETUP_CODE_DEFAULT = """# AUTO-GENERATED FILE
+SETUP_CODE_DEFAULT: Final = """# AUTO-GENERATED FILE
 # go to https://prairielearn.readthedocs.io/en/latest/python-grader/#testssetup_codepy for more info\n"""
 
-SERVER_DEFAULT = """# AUTO-GENERATED FILE
+SERVER_DEFAULT: Final = """# AUTO-GENERATED FILE
 # go to https://prairielearn.readthedocs.io/en/latest/python-grader/#serverpy for more info
 
 def generate(data):
@@ -92,7 +92,7 @@ def generate(data):
     return data\n"""
 
 # Matches, with precedence in listed order:
-MAIN_PATTERN = compile(
+MAIN_PATTERN: Final = compile(
 # - capture group 0: (one-line) region delimiter surrounded by ##'s followed 
 #                    by newline/eof (excluding the ##'s and newline/eof)
     r'\s*\#\#\s*(.*?)\s*\#\#\s*(?:\#|\r?\n|$)|' +
@@ -109,12 +109,22 @@ MAIN_PATTERN = compile(
     r'\?(.*?)\?'
 )
 
-SPECIAL_COMMENT_PATTERN = compile(r'^#(blank[^#]*|\d+given)\s*')
+SPECIAL_COMMENT_PATTERN: Final = compile(r'^#(blank[^#]*|\d+given)\s*')
 
 # capture group: region name
-REGION_COMMENT_PATTERN = compile(r'')
+REGION_COMMENT_PATTERN: Final = compile(r'')
 
-BLANK_SUBSTITUTE = '!BLANK'
+BLANK_SUBSTITUTE: Final = '!BLANK'
+
+SPECIAL_REGIONS: Final = {
+    'setup': path.join('test', 'setup_code.py'),
+    'setup_code': path.join('test', 'setup_code.py'),
+    'ans': path.join('test', 'ans.py'),
+    'answer': path.join('test', 'ans.py'),
+    'answer_code': path.join('test', 'ans.py'),
+    'question': 'question_text',
+    'question_code': 'question_text'
+}
 
 def extract_regions(source_code: str, keep_comments_in_prompt: bool = False) -> Dict[str, str]:
     """ Extracts from well-formatted `source_code` string the text for the question, 
@@ -519,7 +529,7 @@ def resolve_source_path(source_path: str) -> str:
             warn()
             return new_path
     
-    raise FileNotFoundError('Could not find file at {} or {}.'.format(original, new_path))
+    raise FileNotFoundError('Could not find file ' + original)
 
 def generate_many(args: list[str]):
     if not args:
@@ -535,14 +545,16 @@ def generate_many(args: list[str]):
                 Bcolors.warn('-', source_path, 
                     'not recognized as a flag! use --help for more info. -')
             continue
-        
-        source_path = resolve_source_path(source_path)
 
         try:
+            source_path = resolve_source_path(source_path)
             generate_fpp_question(source_path, force_generate_json=force_json)
             successes += 1
         except SyntaxError as e:
             Bcolors.printf(Bcolors.FAIL, 'SyntaxError:', e.msg, 'in', source_path)
+            failures += 1
+        except FileNotFoundError:
+            Bcolors.printf(Bcolors.FAIL, 'FileNotFoundError:', source_path)
             failures += 1
 
         force_json = False
