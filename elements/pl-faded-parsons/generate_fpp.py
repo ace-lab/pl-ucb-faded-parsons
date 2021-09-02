@@ -269,28 +269,19 @@ def generate_fpp_question(
 
     Bcolors.printf(Bcolors.OKGREEN, 'Done.')
 
-def generate_many(args: list[str]):
+def generate_many(args: Args):
     if not args:
         raise Exception('Please provide at least one source code path as an argument')
 
-    log_details = True
-    while '--quiet' in args:
-        args.remove('--quiet')
-        log_details = False
-    
-    force_json = False
     successes, failures = 0, 0
-    for source_path in args:
-        if source_path.startswith('--'):
-            if source_path.endswith('force-json'):
-                force_json = True
-            else:
-                Bcolors.warn('-', source_path, 
-                    'not recognized as a flag! use --help for more info. -')
-            continue
-
+    for a in args.args:
+        source_path = a.path
         try:
-            generate_fpp_question(source_path, force_generate_json=force_json, log_details=log_details)
+            generate_fpp_question(
+                source_path, 
+                force_generate_json=a.force_json, 
+                log_details=not args.quiet
+            )
             successes += 1
         except SyntaxError as e:
             Bcolors.fail('SyntaxError:', e.msg, 'in', source_path)
@@ -313,7 +304,7 @@ def generate_many(args: list[str]):
         else:
             Bcolors.fail('Batch failed on all', n_files(failures))
 
-def profile_generate_many(args: list[str]):
+def profile_generate_many(args: Args):
     from cProfile import Profile
     from pstats import Stats, SortKey
 
@@ -327,11 +318,9 @@ def profile_generate_many(args: list[str]):
 
 
 def main():
-    from sys import argv
-    # ignore executable name
-    args = argv[1:]
-
-    if '-h' in args or '--help' in args:
+    args = parse_args()
+    
+    if args.help:
         print('\n'.join(
             [ Bcolors.f(Bcolors.OKGREEN, 'A tool for generating faded parsons problems.')
             , ''
@@ -361,12 +350,7 @@ def main():
             ]))
         return
 
-    profile = False
-    while '--profile' in args:
-        args.remove('--profile')
-        profile = True
-    
-    if profile:
+    if args.profile:
         profile_generate_many(args)
     else:
         generate_many(args)

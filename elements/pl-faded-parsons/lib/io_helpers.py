@@ -1,7 +1,8 @@
 from typing import *
+from os.path import *
 
 from os import PathLike, getcwd
-from os.path import *
+from dataclasses import dataclass
 
 from lib.consts import Bcolors
 
@@ -62,3 +63,46 @@ def resolve_source_path(source_path: str) -> str:
             return new_path
     
     raise FileNotFoundError('Could not find file ' + original)
+
+
+@dataclass(frozen=True, init=True)
+class Arg:
+    path: str
+    force_json: bool = False
+
+@dataclass(init=True)
+class Args:
+    args: list[Arg]
+    force_json: bool = False
+    quiet: bool = False
+    help: bool = False
+    profile: bool = False
+
+def parse_args() -> Args:
+    from sys import argv
+    arg_iter = iter(argv)
+
+    # ignore executable name
+    _this_file_name = next(arg_iter)
+
+    out = Args(list())
+
+    for a in arg_iter:
+        if a == '--profile':
+            out.profile = True
+        elif a == '--quiet':
+            out.quiet = True
+        elif a == '-h' or a == '--help':
+            out.help = True
+        elif a == '--force-json':
+            path = next(arg_iter, default=None)
+            
+            if path is None:
+                raise Exception('flag --force-json must be followed by a ' +
+                    'path to a question source file')
+            
+            out.args.append(Arg(path, force_json=True))
+        else: # is a path
+            out.args.append(Arg(a))
+    
+    return out
