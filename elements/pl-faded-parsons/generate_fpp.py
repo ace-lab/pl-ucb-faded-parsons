@@ -2,13 +2,14 @@ from typing import *
 
 from collections import defaultdict
 from json import dumps
-from os import getcwd, makedirs, path, PathLike
+from os import makedirs, path, PathLike
 from re import finditer, match as test
 from shutil import copyfile
 from uuid import uuid4
 
 from lib.consts import *
 from lib.name_visitor import *
+from lib.file_helpers import *
 
 def extract_regions(source_code: str, keep_comments_in_prompt: bool = False) -> Dict[str, str]:
     """ Extracts from well-formatted `source_code` string the text for the question, 
@@ -172,18 +173,6 @@ def generate_info_json(question_name: str, indent=4) -> str:
 
     return dumps(info_json, indent=indent) + '\n'
 
-def file_name(file_path: PathLike[AnyStr]) -> AnyStr:
-    """Returns the basename in the path without the file extensions"""
-    return path.splitext(path.basename(file_path))[0]
-
-def file_ext(file_path: PathLike[AnyStr]) -> AnyStr:
-    """Returns the file extension (or '' if none exists)"""
-    return path.splitext(path.basename(file_path))[1]
-
-def write_to(parent_dir: PathLike[AnyStr], file_path: PathLike[AnyStr], data: str):
-    with open(path.join(parent_dir, file_path), 'w+') as f:
-        f.write(data)
-
 def generate_fpp_question(
     source_path: PathLike[AnyStr], 
     force_generate_json: bool = False,
@@ -277,52 +266,6 @@ def generate_fpp_question(
         write_to(question_dir, raw_path, data)
 
     Bcolors.printf(Bcolors.OKGREEN, 'Done.')
-
-def resolve_source_path(source_path: str) -> str:
-    """ Attempts to find a matching source path in the following destinations:
-
-        ```
-        standard course directory structure:
-        + <course>  
-        | ...        << search here 3rd
-        |-+ elements/pl-faded-parsons
-        | |-generate_fpp.py
-        | | ...      << search here 1st
-        |
-        |-+ questions
-        | | ...      << search here 2nd
-        |
-        ```
-    """
-    if path.isdir(source_path) or not file_ext(source_path):
-        source_path += '.py'
-    
-    if path.exists(source_path):
-        return source_path
-
-    warn = lambda: Bcolors.warn(
-        '- Could not find', original, 
-        'in current directory. Proceeding with detected file. -')
-    
-    original = source_path
-
-    # if this is in 'elements/pl-faded-parsons', back up to course directory
-    h, t0 = path.split(getcwd())
-    _, t1 = path.split(h)
-    if t0 == 'pl-faded-parsons' and t1 == 'elements':
-        # try original in a questions directory on the course level
-        new_path = path.join('..', '..', 'questions', original)
-        if path.exists(new_path):
-            warn()
-            return new_path
-        
-        # try original in course directory
-        new_path = path.join('..', '..', original)
-        if path.exists(new_path):
-            warn()
-            return new_path
-    
-    raise FileNotFoundError('Could not find file ' + original)
 
 def generate_many(args: list[str]):
     if not args:
