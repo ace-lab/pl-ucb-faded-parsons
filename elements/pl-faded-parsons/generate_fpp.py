@@ -12,15 +12,15 @@ from uuid import uuid4
 
 class Bcolors:
     # https://stackoverflow.com/questions/287871/how-to-print-colored-text-to-the-terminal
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+    HEADER: Final = '\033[95m'
+    OKBLUE: Final = '\033[94m'
+    OKCYAN: Final = '\033[96m'
+    OKGREEN: Final = '\033[92m'
+    WARNING: Final = '\033[93m'
+    FAIL: Final = '\033[91m'
+    ENDC: Final = '\033[0m'
+    BOLD: Final = '\033[1m'
+    UNDERLINE: Final = '\033[4m'
 
     @staticmethod
     def f(color, *args, sep=' '):
