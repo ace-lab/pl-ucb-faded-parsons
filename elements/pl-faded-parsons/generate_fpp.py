@@ -289,8 +289,6 @@ def generate_many(args: Args):
         except FileNotFoundError:
             Bcolors.fail('FileNotFoundError:', source_path)
             failures += 1
-
-        force_json = False
     
     # print batch feedback
     if successes + failures > 1:
@@ -319,7 +317,7 @@ def profile_generate_many(args: Args):
 
 def main():
     args = parse_args()
-    
+
     if args.help:
         print('\n'.join(
             [ Bcolors.f(Bcolors.OKGREEN, 'A tool for generating faded parsons problems.')
