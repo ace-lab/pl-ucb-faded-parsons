@@ -396,7 +396,7 @@ def file_name(file_path: PathLike[AnyStr]) -> AnyStr:
     return path.splitext(path.basename(file_path))[0]
 
 def file_ext(file_path: PathLike[AnyStr]) -> AnyStr:
-    """Returns the basename in the path without the file extensions"""
+    """Returns the file extension (or '' if none exists)"""
     return path.splitext(path.basename(file_path))[1]
 
 def write_to(parent_dir: PathLike[AnyStr], file_path: PathLike[AnyStr], data: str):
@@ -513,6 +513,9 @@ def resolve_source_path(source_path: str) -> str:
         |
         ```
     """
+    if path.isdir(source_path) or not file_ext(source_path):
+        source_path += '.py'
+    
     if path.exists(source_path):
         return source_path
 
