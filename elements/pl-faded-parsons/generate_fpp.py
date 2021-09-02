@@ -453,11 +453,13 @@ def generate_fpp_question(
     
     json_path = path.join(question_dir, 'info.json')
     json_region = remove_region('info.json')
-    if force_generate_json or json_region or not path.exists(json_path):
+    missing_json = not path.exists(json_path)
+    if force_generate_json or json_region or missing_json:
         json_text = json_region or generate_info_json(question_name)
         write_to(question_dir, 'info.json', json_text)
-        Bcolors.warn('  - Overwriting', json_path, 
-            'using \"info.json\" region...' if json_region else '...')
+        if not missing_json:
+            Bcolors.warn('  - Overwriting', json_path, 
+                'using \"info.json\" region...' if json_region else '...')
 
     setup_code = remove_region('setup_code', SETUP_CODE_DEFAULT)
     answer_code = remove_region('answer_code')
