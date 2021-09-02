@@ -1,3 +1,5 @@
+
+
 def poly(coeffs, x): 
     # Keep track of the total as we iterate through each term.
     # Each term is of the form coeff*(x**power).
@@ -8,3 +10,4 @@ def poly(coeffs, x):
         # Add the value of the term to the total.
         total = total + coeff * (x ** power) 
     return total 
+
