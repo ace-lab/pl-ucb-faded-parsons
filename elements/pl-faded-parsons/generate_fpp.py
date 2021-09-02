@@ -10,8 +10,6 @@ from re import compile, finditer, match as test
 from shutil import copyfile
 from uuid import uuid4
 
-# TODO(LBC): figure out why consecutive regions break
-
 class Bcolors:
     # https://stackoverflow.com/questions/287871/how-to-print-colored-text-to-the-terminal
     HEADER = '\033[95m'
@@ -98,9 +96,12 @@ def generate(data):
 
 # Matches, with precedence in listed order:
 MAIN_PATTERN: Final = compile(
-    # - capture group 0: (one-line) region delimiter surrounded by ##'s followed 
-    #                    by newline/eof (excluding the ##'s and newline/eof)
-    r'\s*\#\#\s*(.*?)\s*\#\#\s*(?:\#|\r?\n|$)|' +
+    # - capture group 0: (one-line) region delimiter surrounded by ##'s
+    #                    (capturing only the text between the ##'s).
+    #                    Consumes leading/trailing spaces/tabs on the line,
+    #                    as well as bookending newlines if the
+    #                    next line isn't another region delimter
+    r'(?:\r?\n|^)[ \t]*\#\#[\t ]*(.*?)\s*\#\#.*?(?:(?=\r?\n[ \t]*\#\#)|\r?\n|$)|' +
     # - capture group 1:  (one-line) comment, up to next comment or newline 
     #                     (excluding the newline/eof)
     r'(\#.*?)(?=\#|\r?\n|$)|' +
