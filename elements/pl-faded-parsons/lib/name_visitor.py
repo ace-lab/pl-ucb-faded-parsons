@@ -3,7 +3,7 @@ from typing import Any
 
 from dataclasses import dataclass
 
-from consts import Bcolors, SERVER_DEFAULT
+from lib.consts import Bcolors, SERVER_DEFAULT
 
 @dataclass(init=True, repr=True, frozen=True)
 class AnnotatedName:

@@ -1,9 +1,9 @@
 from typing import *
 
-from os import *
+from os import PathLike, getcwd
 from os.path import *
 
-from consts import Bcolors
+from lib.consts import Bcolors
 
 def file_name(file_path: PathLike[AnyStr]) -> AnyStr:
     """Returns the basename in the path without the file extensions"""
