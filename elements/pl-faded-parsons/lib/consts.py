@@ -1,7 +1,7 @@
 from typing import *
 
 from os.path import join
-from re import compile
+from re import compile, Pattern
 
 class Bcolors:
     # https://stackoverflow.com/questions/287871/how-to-print-colored-text-to-the-terminal
@@ -16,11 +16,11 @@ class Bcolors:
     UNDERLINE: Final = '\033[4m'
 
     @staticmethod
-    def f(color, *args, sep=' '):
+    def f(color: str, *args, sep=' '):
         return color + sep.join(map(str, args)) + Bcolors.ENDC
 
     @staticmethod
-    def printf(color, *args, **kwargs):
+    def printf(color: str, *args, **kwargs):
         sep = ' '
         if 'sep' in kwargs:
             sep = kwargs['sep']
@@ -36,7 +36,7 @@ class Bcolors:
         Bcolors.printf(Bcolors.FAIL, *args, **kwargs)
 
 
-TEST_DEFAULT: Final = """# AUTO-GENERATED FILE
+TEST_DEFAULT: Final[str] = """# AUTO-GENERATED FILE
 # go to https://prairielearn.readthedocs.io/en/latest/python-grader/#teststestpy for more info
 
 from pl_helpers import name, points
@@ -64,10 +64,10 @@ class Test(PLTestCase):
         
         Feedback.set_score(points)\n"""
 
-SETUP_CODE_DEFAULT: Final = """# AUTO-GENERATED FILE
+SETUP_CODE_DEFAULT: Final[str] = """# AUTO-GENERATED FILE
 # go to https://prairielearn.readthedocs.io/en/latest/python-grader/#testssetup_codepy for more info\n"""
 
-SERVER_DEFAULT: Final = """# AUTO-GENERATED FILE
+SERVER_DEFAULT: Final[str] = """# AUTO-GENERATED FILE
 # go to https://prairielearn.readthedocs.io/en/latest/python-grader/#serverpy for more info
 
 def generate(data):
@@ -88,7 +88,7 @@ def generate(data):
     return data\n"""
 
 # Matches, with precedence in listed order:
-MAIN_PATTERN: Final = compile(
+MAIN_PATTERN: Final[Pattern] = compile(
     # - capture group 0: (one-line) region delimiter surrounded by ##'s
     #                    (capturing only the text between the ##'s).
     #                    Consumes leading newline and surrounding spaces/tabs,
@@ -108,9 +108,9 @@ MAIN_PATTERN: Final = compile(
     r'\?(.*?)\?'
 )
 
-SPECIAL_COMMENT_PATTERN: Final = compile(r'^#(blank[^#]*|\d+given)\s*')
+SPECIAL_COMMENT_PATTERN: Final[Pattern] = compile(r'^#(blank[^#]*|\d+given)\s*')
 
-BLANK_SUBSTITUTE: Final = '!BLANK'
+BLANK_SUBSTITUTE: Final[str] = '!BLANK'
 
 SPECIAL_REGIONS: Final = {
     'setup': join('test', 'setup_code.py'),
