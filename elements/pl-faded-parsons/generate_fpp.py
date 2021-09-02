@@ -98,9 +98,9 @@ def generate(data):
 MAIN_PATTERN: Final = compile(
     # - capture group 0: (one-line) region delimiter surrounded by ##'s
     #                    (capturing only the text between the ##'s).
-    #                    Consumes leading/trailing spaces/tabs on the line,
-    #                    as well as bookending newlines if the
-    #                    next line isn't another region delimter
+    #                    Consumes leading newline and surrounding spaces/tabs,
+    #                    and if the next line doesn't have a region comment,
+    #                    it consumes the trailing newline as well.
     r'(?:\r?\n|^)[ \t]*\#\#[\t ]*(.*?)\s*\#\#.*?(?:(?=\r?\n[ \t]*\#\#)|\r?\n|$)|' +
     # - capture group 1:  (one-line) comment, up to next comment or newline 
     #                     (excluding the newline/eof)
