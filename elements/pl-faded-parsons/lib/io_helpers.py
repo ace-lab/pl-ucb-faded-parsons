@@ -41,7 +41,7 @@ def resolve_source_path(source_path: str) -> str:
 
     warn = lambda: Bcolors.warn(
         '- Could not find', original, 
-        'in current directory. Proceeding with detected file. -')
+        'in current directory. Proceeding with detected file.')
     
     original = source_path
 

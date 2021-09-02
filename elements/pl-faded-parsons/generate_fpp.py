@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from lib.consts import *
 from lib.name_visitor import *
-from lib.file_helpers import *
+from lib.io_helpers import *
 
 def extract_regions(source_code: str, keep_comments_in_prompt: bool = False) -> Dict[str, str]:
     """ Extracts from well-formatted `source_code` string the text for the question, 
@@ -181,6 +181,8 @@ def generate_fpp_question(
         then generates and populates a question directory of the same name.
     """
     Bcolors.printf(Bcolors.OKBLUE, 'Generating from source', source_path)
+    
+    source_path = resolve_source_path(source_path)
 
     if log_details:
         print('- Extracting from source...')
@@ -271,6 +273,11 @@ def generate_many(args: list[str]):
     if not args:
         raise Exception('Please provide at least one source code path as an argument')
 
+    log_details = True
+    while '--quiet' in args:
+        args.remove('--quiet')
+        log_details = False
+    
     force_json = False
     successes, failures = 0, 0
     for source_path in args:
@@ -283,8 +290,7 @@ def generate_many(args: list[str]):
             continue
 
         try:
-            source_path = resolve_source_path(source_path)
-            generate_fpp_question(source_path, force_generate_json=force_json)
+            generate_fpp_question(source_path, force_generate_json=force_json, log_details=log_details)
             successes += 1
         except SyntaxError as e:
             Bcolors.fail('SyntaxError:', e.msg, 'in', source_path)
@@ -350,12 +356,17 @@ def main():
             , Bcolors.f(Bcolors.OKBLUE, 'Flags:')
             , ' -h/--help: prints this guide'
             , ' --profile: appending anywhere in the args allows profiling this parser'
+            , ' --quiet: appending anywhere in the args restricts logging to warnings and errors'
             , ' --force-json <path>: will overwrite the question\'s info.json file with auto-generated content'
             ]))
         return
 
-    if '--profile' in args:
+    profile = False
+    while '--profile' in args:
         args.remove('--profile')
+        profile = True
+    
+    if profile:
         profile_generate_many(args)
     else:
         generate_many(args)
