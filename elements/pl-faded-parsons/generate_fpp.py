@@ -11,7 +11,10 @@ from lib.consts import *
 from lib.name_visitor import *
 from lib.io_helpers import *
 
-def extract_regions(source_code: str, keep_comments_in_prompt: bool = False) -> Dict[str, str]:
+def extract_regions(
+    source_code: str, 
+    keep_comments_in_prompt: bool = False,
+    source_path: str = None) -> Dict[str, str]:
     """ Extracts from well-formatted `source_code` string the text for the question, 
         the problem starting code, the answer code, and any other custom regions
 
@@ -54,6 +57,8 @@ def extract_regions(source_code: str, keep_comments_in_prompt: bool = False) -> 
     RegionToken = namedtuple('RegionToken', ['line', 'id'])
     current_region: RegionToken = None
 
+    format_line = lambda l_n: '({}:{})'.format(source_path or 'line', l_n)
+
     # accumulators
     line_number = 1
     regions = defaultdict(str)
@@ -72,7 +77,7 @@ def extract_regions(source_code: str, keep_comments_in_prompt: bool = False) -> 
         
         # keep the line number updated
         line_number += sum(1 for x in unmatched if x == '\n')
-        
+
         last_end = end
         
         # only one of these is ever non-None
@@ -82,9 +87,11 @@ def extract_regions(source_code: str, keep_comments_in_prompt: bool = False) -> 
             if current_region:
                 if region_delim != current_region.id:
                     raise SyntaxError(
-                        "Region \"{}\" (line {}) began before \"{}\" (line {}) ended"
-                            .format(region_delim, current_region.line, current_region.id, line_number + 1)
-                    )
+                        "Region \"{}\" began {} before \"{}\" ended {}".format(
+                            region_delim, 
+                            format_line(current_region.line), 
+                            current_region.id, 
+                            format_line(line_number + 1)))
                 else:
                     current_region = None
             else:
@@ -129,7 +136,7 @@ def extract_regions(source_code: str, keep_comments_in_prompt: bool = False) -> 
     # all region delimiters should've been detected.
     # if there's a current region, it'll never be closed
     if current_region:
-        raise SyntaxError("File ended before \"{}\" (line {}) ended".format(current_region.id, current_region.line))
+        raise SyntaxError("File ended before \"{}\" {} ended".format(current_region.id, format_line(current_region.line)))
 
     # don't forget everything after the last match!
     unmatched = source_code[last_end:]
@@ -202,7 +209,7 @@ def generate_fpp_question(
     
     with open(source_path, 'r') as source:
         source_code = ''.join(source)
-        regions = extract_regions(source_code)
+        regions = extract_regions(source_code, source_path=source_path)
     
     def remove_region(key, default=''):
         if key in regions:
@@ -297,7 +304,7 @@ def generate_many(args: Args):
             )
             successes += 1
         except SyntaxError as e:
-            Bcolors.fail('SyntaxError:', e.msg, 'in', source_path)
+            Bcolors.fail('SyntaxError:', e.msg)
             failures += 1
         except FileNotFoundError:
             Bcolors.fail('FileNotFoundError:', source_path)

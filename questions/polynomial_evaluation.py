@@ -6,6 +6,7 @@ ie, evaluate $$f(x) = \sum_i \textrm{coeffs}_i ~ x^i$$"""
 a: int = 3
 b = a + 4
 l: list[int] = [1, 2, 3]
+## bad ##
 c = l[0] = 3
 ## setup_code ##
 
