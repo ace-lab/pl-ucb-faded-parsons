@@ -2,7 +2,7 @@ from typing import *
 
 from collections import defaultdict, namedtuple
 from json import dumps
-from os import makedirs, path, PathLike
+from os import path, PathLike
 from re import finditer, match as test
 from shutil import copyfile
 from uuid import uuid4
@@ -196,6 +196,7 @@ def generate_info_json(question_name: str, indent=4) -> str:
 def generate_fpp_question(
     source_path: PathLike[AnyStr], 
     force_generate_json: bool = False,
+    no_parse: bool = False,
     log_details=True):
     """ Takes a path of a well-formatted source (see `extract_prompt_ans`),
         then generates and populates a question directory of the same name.
@@ -228,7 +229,7 @@ def generate_fpp_question(
         print('- Creating destination directories...')
     
     test_dir = path.join(question_dir, 'tests')
-    makedirs(test_dir, exist_ok=True)
+    make_if_absent(test_dir)
 
     copy_dest_path = path.join(question_dir, 'source.py')
     if log_details:
@@ -256,7 +257,8 @@ def generate_fpp_question(
     setup_code = remove_region('setup_code', SETUP_CODE_DEFAULT)
     answer_code = remove_region('answer_code')
 
-    write_to(question_dir, 'server.py', remove_region('server') or generate_server(setup_code, answer_code))
+    write_to(question_dir, 'server.py', remove_region('server') or 
+        generate_server(setup_code, answer_code, no_ast=no_parse))
 
     if log_details:
         print('- Populating {} ...'.format(test_dir))
@@ -281,7 +283,7 @@ def generate_fpp_question(
         
         # ensure that the directories exist before writing
         final_path = path.join(question_dir, raw_path)
-        makedirs(path.dirname(final_path), exist_ok=True)
+        make_if_absent(path.dirname(final_path))
         Bcolors.warn('  -', final_path, '...')
 
         # write files
@@ -300,6 +302,7 @@ def generate_many(args: Args):
             generate_fpp_question(
                 source_path, 
                 force_generate_json=a.force_json, 
+                no_parse=args.no_parse,
                 log_details=not args.quiet
             )
             successes += 1
@@ -364,6 +367,7 @@ def main():
             , ' -h/--help: prints this guide'
             , ' --profile: appending anywhere in the args allows profiling this parser'
             , ' --quiet: appending anywhere in the args restricts logging to warnings and errors'
+            , ' --no-parse: appending anywhere in the args prevents the code from being parsed to derive content'
             , ' --force-json <path>: will overwrite the question\'s info.json file with auto-generated content'
             ]))
         return

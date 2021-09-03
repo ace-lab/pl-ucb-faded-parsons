@@ -1,7 +1,7 @@
 from typing import *
 from os.path import *
 
-from os import PathLike, getcwd
+from os import getcwd, makedirs, PathLike
 from dataclasses import dataclass
 
 from lib.consts import Bcolors
@@ -15,8 +15,15 @@ def file_ext(file_path: PathLike[AnyStr]) -> AnyStr:
     return splitext(basename(file_path))[1]
 
 def write_to(parent_dir: PathLike[AnyStr], file_path: PathLike[AnyStr], data: str):
+    """Opens ./{parent_dir}/{file_path} and writes {data} to it"""
     with open(join(parent_dir, file_path), 'w+') as f:
         f.write(data)
+
+def make_if_absent(dir_path: str):
+    """ Creates the director(ies - nested ok) if they do not yet exist.
+        Otherwise it does nothing
+    """
+    makedirs(dir_path, exist_ok=True)
 
 def resolve_source_path(source_path: str) -> str:
     """ Attempts to find a matching source path in the following destinations:
@@ -77,6 +84,7 @@ class Args:
     quiet: bool = False
     help: bool = False
     profile: bool = False
+    no_parse: bool = False
 
 def parse_args() -> Args:
     from sys import argv
@@ -94,6 +102,8 @@ def parse_args() -> Args:
             out.quiet = True
         elif a == '-h' or a == '--help':
             out.help = True
+        elif a == '--no-parse':
+            out.no_parse = True
         elif a == '--force-json':
             path = next(arg_iter, default=None)
             

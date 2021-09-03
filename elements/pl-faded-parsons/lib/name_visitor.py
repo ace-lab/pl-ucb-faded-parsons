@@ -45,18 +45,21 @@ class GlobalNameVisitor(NodeVisitor):
     def visit_AsyncFunctionDef(self, node: AsyncFunctionDef) -> Any:
         self.names[node.name] = node.type_comment or 'python async function'
 
-def generate_server(setup_code: str, answer_code: str, tab='    ') -> str:
+def generate_server(setup_code: str, answer_code: str, no_ast:bool = False, tab:str = '    ') -> str:
     """Generates a server file by performing analysis on provided code"""
+    if no_ast:
+        return SERVER_DEFAULT
+    
     try:
         setup_names = GlobalNameVisitor.get_names(setup_code)
-    except SyntaxError as e:
-        Bcolors.warn('Could not extract exports from setup: SyntaxError:', e.msg)
+    except SyntaxError:
+        Bcolors.warn('SyntaxError: Could not extract exports from setup')
         setup_names = []
 
     try:
         answer_names = GlobalNameVisitor.get_names(answer_code)
-    except SyntaxError as e:
-        Bcolors.warn('Could not extract exports from answer: SyntaxError:', e.msg)
+    except SyntaxError:
+        Bcolors.warn('SyntaxError: Could not extract exports from answer')
         answer_names = []
 
     if not setup_names and not answer_names:
