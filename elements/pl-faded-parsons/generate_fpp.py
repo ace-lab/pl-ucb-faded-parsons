@@ -1,6 +1,6 @@
 from typing import *
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from json import dumps
 from os import makedirs, path, PathLike
 from re import finditer, match as test
@@ -50,9 +50,13 @@ def extract_regions(source_code: str, keep_comments_in_prompt: bool = False) -> 
     # (exclusive) end of the last match
     last_end = 0
     first_match = True
-    
+
+    RegionToken = namedtuple('RegionToken', ['line', 'id'])
+    current_region: RegionToken = None
+
+    # accumulators
+    line_number = 1
     regions = defaultdict(str)
-    current_region = None
 
     for match in finditer(MAIN_PATTERN, source_code):
         start, end = match.span()
@@ -61,10 +65,13 @@ def extract_regions(source_code: str, keep_comments_in_prompt: bool = False) -> 
         # (if no uncaptured text exists, unmatched = '')
         unmatched = source_code[last_end:start]
         if current_region:
-            regions[current_region] += unmatched
+            regions[current_region.id] += unmatched
         else:
             prompt_code += unmatched
             answer_code += unmatched
+        
+        # keep the line number updated
+        line_number += sum(1 for x in unmatched if x == '\n')
         
         last_end = end
         
@@ -73,14 +80,17 @@ def extract_regions(source_code: str, keep_comments_in_prompt: bool = False) -> 
         
         if region_delim:
             if current_region:
-                if region_delim != current_region:
-                    raise SyntaxError("Region \"{}\" began before \"{}\" ended".format(region_delim, current_region))
+                if region_delim != current_region.id:
+                    raise SyntaxError(
+                        "Region \"{}\" (line {}) began before \"{}\" (line {}) ended"
+                            .format(region_delim, current_region.line, current_region.id, line_number + 1)
+                    )
                 else:
                     current_region = None
             else:
-                current_region = region_delim
+                current_region = RegionToken(line_number + 1, region_delim)
         elif current_region:
-            regions[current_region] += next(filter(bool, match.groups()))
+            regions[current_region.id] += next(filter(bool, match.groups()))
         elif comment:
             special_comment = test(SPECIAL_COMMENT_PATTERN, comment)
 
@@ -94,7 +104,7 @@ def extract_regions(source_code: str, keep_comments_in_prompt: bool = False) -> 
                 prompt_code += comment
         elif docstring:
             if first_match:
-                # isolate the question doc
+                # isolate the question doc and save it
                 regions['question_text'] = docstring[3:-3]
             else:
                 # docstrings cannot be included in current FPP
@@ -111,12 +121,15 @@ def extract_regions(source_code: str, keep_comments_in_prompt: bool = False) -> 
         else:
             raise Exception('All capture groups are None after', last_end)
         
+        # keep track of any \n in the matched part of the string
+        # (namely for docstrings or region delimiters)
+        line_number += sum(1 for x in source_code[start:end] if x == '\n')
         first_match = False
 
     # all region delimiters should've been detected.
     # if there's a current region, it'll never be closed
     if current_region:
-        raise SyntaxError("File ended before \"" + current_region + "\" ended")
+        raise SyntaxError("File ended before \"{}\" (line {}) ended".format(current_region.id, current_region.line))
 
     # don't forget everything after the last match!
     unmatched = source_code[last_end:]
