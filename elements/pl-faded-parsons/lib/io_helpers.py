@@ -1,10 +1,10 @@
-from typing import *
+from argparse import *
 from os.path import *
+from typing import *
 
 from os import getcwd, makedirs, PathLike
-from dataclasses import dataclass
 
-from lib.consts import Bcolors
+from lib.consts import Bcolors, PROGRAM_DESCRIPTION
 
 def file_name(file_path: PathLike[AnyStr]) -> AnyStr:
     """Returns the basename in the path without the file extensions"""
@@ -72,47 +72,19 @@ def resolve_source_path(source_path: str) -> str:
     raise FileNotFoundError('Could not find file ' + original)
 
 
-@dataclass(frozen=True, init=True)
-class Arg:
-    path: str
-    force_json: bool = False
-
-@dataclass(init=True)
-class Args:
-    args: list[Arg]
-    force_json: bool = False
-    quiet: bool = False
-    help: bool = False
-    profile: bool = False
-    no_parse: bool = False
-
-def parse_args() -> Args:
-    from sys import argv
-    arg_iter = iter(argv)
-
-    # ignore executable name
-    _this_file_name = next(arg_iter)
-
-    out = Args(list())
-
-    for a in arg_iter:
-        if a == '--profile':
-            out.profile = True
-        elif a == '--quiet':
-            out.quiet = True
-        elif a == '-h' or a == '--help':
-            out.help = True
-        elif a == '--no-parse':
-            out.no_parse = True
-        elif a == '--force-json':
-            path = next(arg_iter, default=None)
-            
-            if path is None:
-                raise Exception('flag --force-json must be followed by a ' +
-                    'path to a question source file')
-            
-            out.args.append(Arg(path, force_json=True))
-        else: # is a path
-            out.args.append(Arg(a))
+def parse_args(arg_text:str = None) -> Namespace:
+    parser = ArgumentParser(description=PROGRAM_DESCRIPTION, formatter_class=RawTextHelpFormatter)
     
-    return out
+    parser.add_argument('--profile', action='store_true', help='prints profile data after running')
+    parser.add_argument('--quiet', action='store_true', help='restricts logging to warnings and errors only')
+    parser.add_argument('--no-parse', action='store_true', help='prevents the code from being parsed by py.ast to derive content')
+
+    parser.add_argument('source_path', action='append', nargs='+')
+    parser.add_argument('--force-json', action='append', metavar='path', help='will overwrite the question\'s info.json file with auto-generated content')
+
+    # if arg_text is not set, then it gets from the command line
+    ns = parser.parse_intermixed_args(args=arg_text)
+    ns.source_paths = [p for l in ns.source_path for p in l]
+    ns.force_json = ns.force_json or list()
+    return ns
+ 

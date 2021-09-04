@@ -112,7 +112,7 @@ SPECIAL_COMMENT_PATTERN: Final[Pattern] = compile(r'^#(blank[^#]*|\d+given)\s*')
 
 BLANK_SUBSTITUTE: Final[str] = '!BLANK'
 
-SPECIAL_REGIONS: Final = {
+SPECIAL_REGIONS: Final[str] = {
     'setup': join('test', 'setup_code.py'),
     'setup_code': join('test', 'setup_code.py'),
     'ans': join('test', 'ans.py'),
@@ -121,3 +121,28 @@ SPECIAL_REGIONS: Final = {
     'question': 'question_text',
     'question_code': 'question_text'
 }
+
+PROGRAM_DESCRIPTION: Final[str] = Bcolors.f(Bcolors.OKGREEN, ' A tool for generating faded parsons problems.') + """
+
+ Provide the path to well-formatted python file(s), and a question template will be generated.
+ This tool will search for a path in ./ ../../questions/ and ../../ before erring
+ """ + Bcolors.f(Bcolors.OKBLUE, 'Formatting rules:') + """
+ - If the file begins with a docstring, it will become the question text
+     - The question text is removed from the answer
+     - Docstrings are always removed from the prompt
+ - Text surrounded by `?`s will become blanks in the prompt
+     - Blanks cannot span more than a single line
+     - The text within the question marks fills the blank in the answer
+     - `?`s in any kind of string-literal or comment are ignored
+ - Comments are removed from the prompt unless the comment matches the form `#{n}given` or `#blank`
+     - These special forms are the only comments removed from the answer
+ - Regions are begun and ended by `## {region name} ##`
+     - A maximum of one region may be open at a time
+     - Regions must be closed before the end of the source
+     - All text in a region is only copied into that region
+     - Text will be copied into a new file with the regions name in the
+       question directory, excluding these special regions:
+         explicit: `test` `setup_code`
+         implicit: `answer_code` `prompt_code` `question_text`
+     - Any custom region that clashes with an automatically generated file name
+       will overwrite the automatically generated code"""

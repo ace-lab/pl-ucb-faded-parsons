@@ -285,26 +285,38 @@ def generate_fpp_question(
 
     Bcolors.printf(Bcolors.OKGREEN, 'Done.')
 
-def generate_many(args: Args):
+def generate_many(args: Namespace):
     if not args:
         raise Exception('Please provide at least one source code path as an argument')
 
-    successes, failures = 0, 0
-    for a in args.args:
-        source_path = a.path
+    def generate_one(source_path, force_json=False):
         try:
             generate_fpp_question(
-                source_path, 
-                force_generate_json=a.force_json, 
+                source_path,
+                force_generate_json=force_json,
                 no_parse=args.no_parse,
                 log_details=not args.quiet
             )
-            successes += 1
+            return True
         except SyntaxError as e:
             Bcolors.fail('SyntaxError:', e.msg)
-            failures += 1
         except FileNotFoundError:
             Bcolors.fail('FileNotFoundError:', source_path)
+        
+        return False
+    
+    successes, failures = 0, 0
+
+    for source_path in args.source_paths:
+        if generate_one(source_path):
+            successes += 1
+        else:
+            failures += 1
+    
+    for source_path in args.force_json:
+        if generate_one(source_path, force_json=True):
+            successes += 1
+        else:
             failures += 1
     
     # print batch feedback
@@ -319,7 +331,7 @@ def generate_many(args: Args):
         else:
             Bcolors.fail('Batch failed on all', n_files(failures))
 
-def profile_generate_many(args: Args):
+def profile_generate_many(args: Namespace):
     from cProfile import Profile
     from pstats import Stats, SortKey
 
@@ -335,41 +347,7 @@ def profile_generate_many(args: Args):
 def main():
     args = parse_args()
 
-    if args.help:
-        print('\n'.join(
-            [ Bcolors.f(Bcolors.OKGREEN, 'A tool for generating faded parsons problems.')
-            , ''
-            , 'Provide the path to well-formatted python file(s), and a question template will be generated.'
-            , 'This tool will search for a path in ./ ../../questions/ and ../../ before erring'
-            , Bcolors.f(Bcolors.OKBLUE, 'Formatting rules:')
-            , '- If the file begins with a docstring, it will become the question text'
-            , '    - The question text is removed from the answer'
-            , '    - Docstrings are always removed from the prompt'
-            , '- Text surrounded by `?`s will become blanks in the prompt'
-            , '    - Blanks cannot span more than a single line'
-            , '    - The text within the question marks fills the blank in the answer'
-            , '    - `?`s in any kind of string-literal or comment are ignored'
-            , '- Comments are removed from the prompt unless the comment matches the form `#{n}given` or `#blank`'
-            , '    - These special forms are the only comments removed from the answer'
-            , '- Custom regions are begun and ended by `## {region name} ##`'
-            , '    - A maximum of one region may be open at a time'
-            , '    - Regions must be closed before the end of the source'
-            , '    - All text in a region is only copied into that region'
-            , '    - Text will be copied into a new file with the regions name in the'
-            , '      question directory, excluding these special regions:'
-            , '        explicit: `test` `setup_code`'
-            , '        implicit: `answer_code` `prompt_code` `question_text`'
-            , '    - Any custom region that clashes with an automatically generated file name'
-            , '      will overwrite the automatically generated code'
-            , ''
-            , Bcolors.f(Bcolors.OKBLUE, 'Flags:')
-            , ' -h/--help: prints this guide'
-            , ' --profile: appending anywhere in the args allows profiling this parser'
-            , ' --quiet: appending anywhere in the args restricts logging to warnings and errors'
-            , ' --no-parse: appending anywhere in the args prevents the code from being parsed to derive content'
-            , ' --force-json <path>: will overwrite the question\'s info.json file with auto-generated content'
-            ]))
-        return
+    print(args)
 
     if args.profile:
         profile_generate_many(args)
