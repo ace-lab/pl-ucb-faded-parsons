@@ -73,6 +73,9 @@ def resolve_source_path(source_path: str) -> str:
 
 
 def parse_args(arg_text:str = None) -> Namespace:
+    """ Returns a Namespace containing all the flag and path data. 
+        If arg_text is not provided, uses `sys.argv`.
+    """
     parser = ArgumentParser(description=PROGRAM_DESCRIPTION, formatter_class=RawTextHelpFormatter)
     
     parser.add_argument('--profile', action='store_true', help='prints profile data after running')
@@ -84,7 +87,11 @@ def parse_args(arg_text:str = None) -> Namespace:
 
     # if arg_text is not set, then it gets from the command line
     ns = parser.parse_intermixed_args(args=arg_text)
+    
+    # unpack weird nesting, delete confusing name
     ns.source_paths = [p for l in ns.source_path for p in l]
+    del ns.source_path
+
     ns.force_json = ns.force_json or list()
     return ns
  
