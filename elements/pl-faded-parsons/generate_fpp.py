@@ -347,8 +347,6 @@ def profile_generate_many(args: Namespace):
 def main():
     args = parse_args()
 
-    print(args)
-
     if args.profile:
         profile_generate_many(args)
     else:
