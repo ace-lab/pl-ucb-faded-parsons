@@ -47,9 +47,6 @@ def extract_regions(
         {'question_text': "Make good?", 'prompt_code': "!BLANK", 'answer_code': "del bad  # badness?!?!"}
         ```
     """
-    prompt_code = ''
-    answer_code = ''
-
     # (exclusive) end of the last match
     last_end = 0
     first_match = True
@@ -72,8 +69,8 @@ def extract_regions(
         if current_region:
             regions[current_region.id] += unmatched
         else:
-            prompt_code += unmatched
-            answer_code += unmatched
+            regions['prompt_code'] += unmatched
+            regions['answer_code'] += unmatched
         
         # keep the line number updated
         line_number += sum(1 for x in unmatched if x == '\n')
@@ -102,29 +99,29 @@ def extract_regions(
             special_comment = test(SPECIAL_COMMENT_PATTERN, comment)
 
             if not special_comment:
-                answer_code += comment
+                regions['answer_code'] += comment
 
             if special_comment or keep_comments_in_prompt:
                 # even if excluding the comment from the prompt,
                 # every comment ends with a '\n'.
                 # must keep it to maintain whitespacing
-                prompt_code += comment
+                regions['prompt_code'] += comment
         elif docstring:
             if first_match:
                 # isolate the question doc and save it
-                regions['question_text'] = docstring[3:-3]
+                regions['question_text'] += docstring[3:-3]
             else:
                 # docstrings cannot be included in current FPP
-                # prompt_code += docstring
-                answer_code += docstring
+                # regions['prompt_code'] += docstring
+                regions['answer_code'] += docstring
         elif string:
             # strings always stay in both
-            prompt_code += string
-            answer_code += string
+            regions['prompt_code'] += string
+            regions['answer_code'] += string
         elif blank_ans:
             # fill in proper blank text
-            prompt_code += BLANK_SUBSTITUTE
-            answer_code += blank_ans
+            regions['prompt_code'] += BLANK_SUBSTITUTE
+            regions['answer_code'] += blank_ans
         else:
             raise Exception('All capture groups are None after', last_end)
         
@@ -140,16 +137,13 @@ def extract_regions(
 
     # don't forget everything after the last match!
     unmatched = source_code[last_end:]
-    prompt_code += unmatched
-    answer_code += unmatched
+    regions['prompt_code'] += unmatched
+    regions['answer_code'] += unmatched
     
     # remove all whitespace-only lines 
     # usually as a result of removing comments)
     # then remove all indentation
-    prompt_code = '\n'.join(filter(bool, map(str.strip, prompt_code.splitlines())))
-
-    regions['prompt_code'] = prompt_code
-    regions['answer_code'] = answer_code
+    regions['prompt_code'] = '\n'.join(filter(bool, map(str.strip, regions['prompt_code'].splitlines())))
 
     return regions
 
@@ -355,13 +349,18 @@ def main():
             , '    - Blanks cannot span more than a single line'
             , '    - The text within the question marks fills the blank in the answer'
             , '    - `?`s in any kind of string-literal or comment are ignored'
-            , '- Comments are removed from the prompt *unless*'
-            , '    - The comment is of the form `#{n}given` or `#blank`,' 
-            , '      which are the only comments removed from the answer'
+            , '- Comments are removed from the prompt unless the comment matches the form `#{n}given` or `#blank`'
+            , '    - These special forms are the only comments removed from the answer'
             , '- Custom regions are begun and ended by `## {region name} ##`'
             , '    - A maximum of one region may be open at a time'
+            , '    - Regions must be closed before the end of the source'
             , '    - All text in a region is only copied into that region'
-            , '    - Regions must be closed before the end of the source string'
+            , '    - Text will be copied into a new file with the regions name in the'
+            , '      question directory, excluding these special regions:'
+            , '        explicit: `test` `setup_code`'
+            , '        implicit: `answer_code` `prompt_code` `question_text`'
+            , '    - Any custom region that clashes with an automatically generated file name'
+            , '      will overwrite the automatically generated code'
             , ''
             , Bcolors.f(Bcolors.OKBLUE, 'Flags:')
             , ' -h/--help: prints this guide'
