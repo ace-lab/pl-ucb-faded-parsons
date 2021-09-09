@@ -1,6 +1,7 @@
 /* eslint-env jquery, browser */
 
 var ParsonsGlobal = {
+  logger: null,
   /*
    * When form is submitted, capture the state of the student's solution.
    * For now we only submit the actual code, NOT the original metadata of where the blanks were etc.
@@ -37,10 +38,13 @@ var ParsonsGlobal = {
    * For now, no logging of events is done.
    */
   setup: function() {
+    if (ParsonsLogger && !ParsonsGlobal.logger) {
+      ParsonsGlobal.logger = new ParsonsLogger();
+    }
     ParsonsGlobal.widget = new ParsonsWidget({
       'sortableId': 'parsons-solution',
-      'onSortableUpdate': (ParsonsLogger && ParsonsLogger.onSortableUpdate) || ((event, ui) => {}), // normally would log this event here.
-      'onBlankUpdate': (ParsonsLogger && ParsonsLogger.onSortableUpdate) || ((event, codeline) => {}), // fires on blank input text editting
+      'onSortableUpdate': (ParsonsGlobal.logger && ParsonsGlobal.logger.onSortableUpdate) || ((event, ui) => {}), // normally would log this event here.
+      'onBlankUpdate': (ParsonsGlobal.logger && ParsonsGlobal.logger.onBlankUpdate) || ((event, codeline) => {}), // fires on blank input text editting
       'trashId': 'starter-code',
       'max_wrong_lines': 1,
       'syntax_language': 'lang-py' // lang-rb and other choices also acceptable
