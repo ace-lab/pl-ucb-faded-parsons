@@ -7,9 +7,11 @@ from re import finditer, match as test
 from shutil import copyfile
 from uuid import uuid4
 
-from lib.consts import *
-from lib.name_visitor import *
-from lib.io_helpers import *
+from lib.consts import MAIN_PATTERN, SPECIAL_COMMENT_PATTERN, \
+    BLANK_SUBSTITUTE, SETUP_CODE_DEFAULT, TEST_DEFAULT
+from lib.name_visitor import generate_server
+from lib.io_helpers import Bcolors, resolve_source_path, file_name, \
+    make_if_absent, write_to, file_ext, Namespace, parse_args
 
 def extract_regions(
     source_code: str, 
