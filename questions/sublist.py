@@ -1,4 +1,6 @@
-""""""
+""" Make a function <code>is_sublist</code> that checks wether the first
+    argument contains the second as a sublist.
+"""
 
 def is_sublist(list, sublist): #0given
     n, m = len(list), len(sublist)
