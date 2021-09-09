@@ -850,7 +850,7 @@
      // set up event listeners on input fields for blanks
      $('input.parsons-blank').each(function (_index, item) { 
         item.addEventListener('input', function(e) {
-          that.options.onBlankUpdate(item, e);
+          that.options.onBlankUpdate(e, item);
         });
      });
      // Log the original codelines in the exercise in order to be able to
