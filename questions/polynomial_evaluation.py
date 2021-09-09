@@ -27,7 +27,6 @@ from pl_unit_test import PLTestCase
 from code_feedback import Feedback
 from unittest import mock
 from io import StringIO
-import numpy as np
 from random import randrange
 
 
