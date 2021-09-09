@@ -39,8 +39,8 @@ var ParsonsGlobal = {
   setup: function() {
     ParsonsGlobal.widget = new ParsonsWidget({
       'sortableId': 'parsons-solution',
-      'onSortableUpdate': (event, ui) => {}, // normally would log this event here.
-      'onBlankUpdate': (event, codeline) => {}, // fires on blank input text editting
+      'onSortableUpdate': (ParsonsLogger && ParsonsLogger.onSortableUpdate) || ((event, ui) => {}), // normally would log this event here.
+      'onBlankUpdate': (ParsonsLogger && ParsonsLogger.onSortableUpdate) || ((event, codeline) => {}), // fires on blank input text editting
       'trashId': 'starter-code',
       'max_wrong_lines': 1,
       'syntax_language': 'lang-py' // lang-rb and other choices also acceptable
