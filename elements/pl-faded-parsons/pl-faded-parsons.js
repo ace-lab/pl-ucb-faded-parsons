@@ -25,6 +25,8 @@ var ParsonsGlobal = {
     });
     $('#parsons-solution-order').val(JSON.stringify(solutionElements));
     $('#student-parsons-solution').val(ParsonsGlobal.widget.solutionCode()[0]);
+
+    ParsonsGlobal.logger && ParsonsGlobal.logger.onSubmit();
   },
 
   /* When blanks are filled in adjust their length */
@@ -38,9 +40,6 @@ var ParsonsGlobal = {
    * For now, no logging of events is done.
    */
   setup: function() {
-    if (ParsonsLogger && !ParsonsGlobal.logger) {
-      ParsonsGlobal.logger = new ParsonsLogger();
-    }
     ParsonsGlobal.widget = new ParsonsWidget({
       'sortableId': 'parsons-solution',
       'onSortableUpdate': (event, ui) => {
@@ -59,6 +58,10 @@ var ParsonsGlobal = {
     $('input.text-box').on('input', ParsonsGlobal.adjustBlankWidth);
     // when form submitted, grab the student work and put it into hidden form fields
     $('form.question-form').submit(ParsonsGlobal.submitHandler);
+    
+    if (ParsonsLogger && !ParsonsGlobal.logger) {
+      ParsonsGlobal.logger = new ParsonsLogger(ParsonsGlobal.widget);
+    }
   }
 }
 
