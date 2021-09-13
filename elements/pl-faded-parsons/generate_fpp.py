@@ -11,7 +11,7 @@ from lib.consts import MAIN_PATTERN, SPECIAL_COMMENT_PATTERN, \
     BLANK_SUBSTITUTE, SETUP_CODE_DEFAULT, TEST_DEFAULT
 from lib.name_visitor import generate_server
 from lib.io_helpers import Bcolors, resolve_source_path, file_name, \
-    make_if_absent, write_to, file_ext, Namespace, parse_args
+    make_if_absent, write_to, file_ext, Namespace, parse_args, auto_detect_sources
 
 def extract_regions(
     source_code: str, 
@@ -288,9 +288,9 @@ def generate_fpp_question(
     Bcolors.printf(Bcolors.OKGREEN, 'Done.')
 
 def generate_many(args: Namespace):
-    if not args:
-        raise Exception('Please provide at least one source code path as an argument')
-
+    if not args.source_paths:
+        args.source_paths = auto_detect_sources()
+    
     def generate_one(source_path, force_json=False):
         try:
             generate_fpp_question(
