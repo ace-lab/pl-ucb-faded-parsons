@@ -2,7 +2,7 @@ from argparse import *
 from os.path import *
 from typing import *
 
-from os import getcwd, makedirs, PathLike
+from os import getcwd, listdir, makedirs, PathLike
 
 from lib.consts import Bcolors, PROGRAM_DESCRIPTION
 
@@ -25,7 +25,20 @@ def make_if_absent(dir_path: str):
     """
     makedirs(dir_path, exist_ok=True)
 
-def resolve_source_path(source_path: str) -> str:
+def auto_detect_sources() -> list[PathLike[AnyStr]]:
+    Bcolors.warn('** No paths provided, auto-detecting questions directory **')
+    info_json_path = resolve_source_path('infoCourse.json', silent=True)
+    questions_dir = join(dirname(info_json_path), 'questions')
+    
+    if exists(questions_dir):
+        resolve = lambda n: join(questions_dir, n)
+        is_valid = lambda f: isfile(f)
+        return list(filter(is_valid, map(resolve, listdir(questions_dir))))
+    
+    Bcolors.fail('** Auto-dection failed. Please provide source paths (--help for more info) **')
+    exit(1)
+
+def resolve_source_path(source_path: str, silent=False) -> str:
     """ Attempts to find a matching source path in the following destinations:
 
         ```
@@ -48,9 +61,10 @@ def resolve_source_path(source_path: str) -> str:
     if exists(source_path):
         return source_path
 
-    warn = lambda: Bcolors.warn(
-        '- Could not find', original, 
-        'in current directory. Proceeding with detected file.')
+    def warn():
+        if not silent:
+            Bcolors.warn('- Could not find', original, 
+                'in current directory. Proceeding with detected file.')
     
     original = source_path
 
@@ -88,7 +102,7 @@ def parse_args(arg_text:str = None) -> Namespace:
     parser.add_argument('--quiet', action='store_true', help='restricts logging to warnings and errors only')
     parser.add_argument('--no-parse', action='store_true', help='prevents the code from being parsed by py.ast to derive content')
 
-    parser.add_argument('source_path', action='append', nargs='+')
+    parser.add_argument('source_path', action='append', nargs='*')
     parser.add_argument('--force-json', action='append', metavar='path', help='will overwrite the question\'s info.json file with auto-generated content')
 
     # if arg_text is not set, then it gets from the command line
