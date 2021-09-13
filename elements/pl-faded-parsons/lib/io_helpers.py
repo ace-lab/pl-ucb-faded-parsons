@@ -40,6 +40,7 @@ def resolve_source_path(source_path: str) -> str:
         | | ...      << search here 2nd
         |
         ```
+        Will search ./questions/ 4th, in case this is run from <course>/
     """
     if isdir(source_path) or not file_ext(source_path):
         source_path += '.py'
@@ -68,6 +69,11 @@ def resolve_source_path(source_path: str) -> str:
         if exists(new_path):
             warn()
             return new_path
+    
+    new_path = join('questions', original)
+    if exists(new_path):
+        warn()
+        return new_path
     
     raise FileNotFoundError('Could not find file ' + original)
 
