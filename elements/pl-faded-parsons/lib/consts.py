@@ -125,7 +125,8 @@ SPECIAL_REGIONS: Final[str] = {
 PROGRAM_DESCRIPTION: Final[str] = Bcolors.f(Bcolors.OKGREEN, ' A tool for generating faded parsons problems.') + """
 
  Provide the path to well-formatted python file(s), and a question template will be generated.
- This tool will search for a path in ./ ../../questions/ and ../../ before erring
+ This tool will search for a path in ./ questions/ ../../questions/ and ../../ before erring.
+ If none is provided, it will hunt for a questions directory, and use all .py files there.
  """ + Bcolors.f(Bcolors.OKBLUE, 'Formatting rules:') + """
  - If the file begins with a docstring, it will become the question text
      - The question text is removed from the answer
