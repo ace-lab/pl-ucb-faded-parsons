@@ -167,7 +167,7 @@ def generate_question_html(
     elif setup_names or answer_names:
         question_text = tab + '<h3> Prompt </h3>\n' + question_text
         
-        question_text += '<markdown>\n'
+        question_text += '\n\n<markdown>\n'
 
         def format_annotated_name(name: AnnotatedName) -> str:
             out = ''
@@ -183,9 +183,11 @@ def generate_question_html(
         if setup_names:
             question_text += '### Provided\n'
             question_text += '\n'.join(map(format_annotated_name, setup_names))
+            if answer_names:
+                question_text += '\n\n'
         
         if answer_names:
-            question_text += '\n\n### Requried'
+            question_text += '### Requried\n'
             question_text += '\n'.join(map(format_annotated_name, answer_names))
 
         question_text += '</markdown>\n'
@@ -280,7 +282,12 @@ def generate_fpp_question(
     prompt_code = remove_region('prompt_code')
     question_text = remove_region('question_text')
 
-    question_html = generate_question_html(prompt_code, question_text=question_text)
+    question_html = generate_question_html(
+        prompt_code, 
+        question_text=question_text,
+        setup_names=setup_names,
+        answer_names=answer_names
+    )
 
     write_to(question_dir, 'question.html', question_html)
     
