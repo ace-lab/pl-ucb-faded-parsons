@@ -17,19 +17,19 @@ class Test(PLTestCase):
     @points(2)
     @name("testing example cases")
     def test_0(self):
-        test_cases(self.st.is_sublist, self.ref.is_sublist, [
-            [['a', 'b', 'c', 'd'], ['b', 'c']],
-            [[1, 2, 3, 4], [4, 3]]
-        ])
+        test_cases(self.st.is_sublist, self.ref.is_sublist, (
+            (['a', 'b', 'c', 'd'], ['b', 'c']),
+            ([1, 2, 3, 4], [4, 3])
+        ))
 
     
     @points(8)
     @name("advanced cases")
     def test_1(self):
-        test_cases(self.st.is_sublist, self.ref.is_sublist, [
-            [[1, 2, 3, 4], [2, 3]],
-            [[1, 2, 3, 4], [3, 2]],
-            [[1, 2, 3, 4], []],
-            [[1, 2, 3, 4], [1, 2, 3, 4]],
-            [[1, 2, 3, 4], [1, 2, 3, 4, 5]],
-        ])
+        test_cases(self.st.is_sublist, self.ref.is_sublist, (
+            ([1, 2, 3, 4], [2, 3]),
+            ([1, 2, 3, 4], [3, 2]),
+            ([1, 2, 3, 4], []),
+            ([1, 2, 3, 4], [1, 2, 3, 4]),
+            ([1, 2, 3, 4], [1, 2, 3, 4, 5]),
+        ))
