@@ -5,15 +5,15 @@ from re import compile, Pattern
 
 class Bcolors:
     # https://stackoverflow.com/questions/287871/how-to-print-colored-text-to-the-terminal
-    HEADER: Final = '\033[95m'
-    OKBLUE: Final = '\033[94m'
-    OKCYAN: Final = '\033[96m'
-    OKGREEN: Final = '\033[92m'
-    WARNING: Final = '\033[93m'
-    FAIL: Final = '\033[91m'
-    ENDC: Final = '\033[0m'
-    BOLD: Final = '\033[1m'
-    UNDERLINE: Final = '\033[4m'
+    HEADER: Final[str] = '\033[95m'
+    OKBLUE: Final[str] = '\033[94m'
+    OKCYAN: Final[str] = '\033[96m'
+    OKGREEN: Final[str] = '\033[92m'
+    WARNING: Final[str] = '\033[93m'
+    FAIL: Final[str] = '\033[91m'
+    ENDC: Final[str] = '\033[0m'
+    BOLD: Final[str] = '\033[1m'
+    UNDERLINE: Final[str] = '\033[4m'
 
     @staticmethod
     def f(color: str, *args, sep=' '):

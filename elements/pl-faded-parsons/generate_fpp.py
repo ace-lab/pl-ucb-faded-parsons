@@ -14,9 +14,9 @@ from lib.io_helpers import Bcolors, resolve_source_path, file_name, \
     make_if_absent, write_to, file_ext, Namespace, parse_args, auto_detect_sources
 
 def extract_regions(
-    source_code: str, 
+    source_code: str, *,
     keep_comments_in_prompt: bool = False,
-    source_path: str = None) -> Dict[str, str]:
+    source_path: str = None) -> dict[str, str]:
     """ Extracts from well-formatted `source_code` string the text for the question, 
         the problem starting code, the answer code, and any other custom regions
 
@@ -202,7 +202,7 @@ def generate_question_html(
 {tab}{indented}
 </pl-faded-parsons>""".format(question_text=question_text, tab=tab, indented=indented)
 
-def generate_info_json(question_name: str, indent=4) -> str:
+def generate_info_json(question_name: str, *, indent=4) -> str:
     """ Creates the default info.json for a new FPP question, with a unique v4 UUID.
         Expects `question_name` to be lower snake case.
     """

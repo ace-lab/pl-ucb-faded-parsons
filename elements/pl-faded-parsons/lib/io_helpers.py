@@ -38,7 +38,7 @@ def auto_detect_sources() -> list[PathLike[AnyStr]]:
     Bcolors.fail('** Auto-dection failed. Please provide source paths (--help for more info) **')
     exit(1)
 
-def resolve_source_path(source_path: str, silent=False) -> str:
+def resolve_source_path(source_path: str, *, silent: bool = False) -> str:
     """ Attempts to find a matching source path in the following destinations:
 
         ```
@@ -92,7 +92,7 @@ def resolve_source_path(source_path: str, silent=False) -> str:
     raise FileNotFoundError('Could not find file ' + original)
 
 
-def parse_args(arg_text:str = None) -> Namespace:
+def parse_args(arg_text: str = None) -> Namespace:
     """ Returns a Namespace containing all the flag and path data. 
         If arg_text is not provided, uses `sys.argv`.
     """
