@@ -1,27 +1,35 @@
-# AUTO-GENERATED FILE
-# go to https://prairielearn.readthedocs.io/en/latest/python-grader/#teststestpy for more info
-
 from pl_helpers import name, points
 from pl_unit_test import PLTestCase
 from code_feedback import Feedback
 
+def test_cases(student_fn, ref_fn, cases):
+    proportion_correct = 0
+    for case in cases:
+        user_val = Feedback.call_user(student_fn, *case)
+        ref_val = ref_fn(*case)
+        if user_val == ref_val:
+            proportion_correct += 1
+    proportion_correct /= len(cases)
+
+    Feedback.set_score(proportion_correct)
 
 class Test(PLTestCase):
-    @points(1)
-    @name("test 0")
+    @points(2)
+    @name("testing example cases")
     def test_0(self):
-        points = 0
-        # ex: calling a student defined function det 
-        #     with args=(1, 2, 3, 4)
-        # case = [1, 2, 3, 4]
-        # user_val = Feedback.call_user(self.st.det, *case)
+        test_cases(self.st.is_sublist, self.ref.is_sublist, (
+            (['a', 'b', 'c', 'd'], ['b', 'c']),
+            ([1, 2, 3, 4], [4, 3])
+        ))
 
-        # ex: calling a function defined in ans.py called det
-        #     with the same arguments
-        # ref_val = self.ref.det(*case)
-
-        # ex: test correctness, update points
-        # if Feedback.check_scalar('case: ' + case, ref_val, user_val):
-        #     points += 1
-        
-        Feedback.set_score(points)
+    
+    @points(8)
+    @name("advanced cases")
+    def test_1(self):
+        test_cases(self.st.is_sublist, self.ref.is_sublist, (
+            ([1, 2, 3, 4], [2, 3]),
+            ([1, 2, 3, 4], [3, 2]),
+            ([1, 2, 3, 4], []),
+            ([1, 2, 3, 4], [1, 2, 3, 4]),
+            ([1, 2, 3, 4], [1, 2, 3, 4, 5]),
+        ))
