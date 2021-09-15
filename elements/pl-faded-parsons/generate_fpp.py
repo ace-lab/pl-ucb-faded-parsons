@@ -226,10 +226,12 @@ def generate_info_json(question_name: str, indent=4) -> str:
     return dumps(info_json, indent=indent) + '\n'
 
 def generate_fpp_question(
-    source_path: PathLike[AnyStr], 
+    source_path: PathLike[AnyStr], *,
     force_generate_json: bool = False,
     no_parse: bool = False,
-    log_details=True):
+    log_details: bool = True,
+    show_required: bool = False
+    ):
     """ Takes a path of a well-formatted source (see `extract_prompt_ans`),
         then generates and populates a question directory of the same name.
     """
@@ -286,7 +288,7 @@ def generate_fpp_question(
         prompt_code, 
         question_text=question_text,
         setup_names=setup_names,
-        answer_names=answer_names
+        answer_names=answer_names if show_required else None
     )
 
     write_to(question_dir, 'question.html', question_html)
