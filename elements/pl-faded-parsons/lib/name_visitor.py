@@ -47,14 +47,17 @@ class GlobalNameVisitor(NodeVisitor):
             self.names[key] = None
     
     def visit_FunctionDef(self, node: FunctionDef) -> Any:
-        ann = get_function_type(node)
-        desc = get_docstring(node, clean=True)
-        self.names[node.name] = (ann, desc)
+        self.names[node.name] = (get_function_type(node), get_function_desc(node))
 
     def visit_AsyncFunctionDef(self, node: AsyncFunctionDef) -> Any:
-        ann = get_function_type(node)
-        desc = get_docstring(node, clean=True)
-        self.names[node.name] = (ann, desc)
+        self.names[node.name] = (get_function_type(node), get_function_desc(node))
+
+def get_function_desc(node: Union[FunctionDef, AsyncFunctionDef]) -> str:
+    # cannot allow newlines, will break server.py file
+    doc = get_docstring(node, clean=True)
+    if not doc:
+        return doc
+    return doc.replace('\n', ' ').strip()
 
 def get_function_type(node: Union[FunctionDef, AsyncFunctionDef]) -> str:
     if node.type_comment:

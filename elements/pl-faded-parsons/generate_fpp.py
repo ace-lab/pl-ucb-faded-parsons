@@ -170,14 +170,12 @@ def generate_question_html(
         question_text += '\n\n<markdown>\n'
 
         def format_annotated_name(name: AnnotatedName) -> str:
-            out = ''
-            out += ' - `' + name.id
+            out = ' - `' + name.id
             if name.annotation:
                 out += ': ' + name.annotation
             out += '`'
             if name.description:
                 out += ', ' + name.description
-            out += '\n'
             return out
 
         if setup_names:
@@ -190,7 +188,7 @@ def generate_question_html(
             question_text += '### Requried\n'
             question_text += '\n'.join(map(format_annotated_name, answer_names))
 
-        question_text += '</markdown>\n'
+        question_text += '\n</markdown>\n'
     
     return """<!-- AUTO-GENERATED FILE -->
 <pl-question-panel>
