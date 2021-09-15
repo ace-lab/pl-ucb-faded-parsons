@@ -145,5 +145,7 @@ PROGRAM_DESCRIPTION: Final[str] = Bcolors.f(Bcolors.OKGREEN, ' A tool for genera
        question directory, excluding these special regions:
          explicit: `test` `setup_code`
          implicit: `answer_code` `prompt_code` `question_text`
+     - Code in `setup_code` will be parsed to extract exposed names unless the --no-parse
+       flag is set. Type annotations and function docstrings are used to fill out server.py
      - Any custom region that clashes with an automatically generated file name
        will overwrite the automatically generated code"""
