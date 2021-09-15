@@ -9,18 +9,14 @@
 """
 
 ## setup_code ##
-def to_coordinates(pos: str):
-    """description"""
-    file, rank = pos
-    return ord(file) - ord('a'), ord(rank) - ord('1')
+def to_coordinates(pos: str) -> tuple[int, int]:
+    """turns a file and rank string (ie 'c3') and turns it into an (int, int)"""
+    f_ord, r_ord = tuple(map(ord, pos[:2]))
+    return f_ord - ord('a'), r_ord - ord('1')
 ## setup_code ##
 
-def square_color(list, sublist): #0given
-    n, m = len(list), len(sublist)
-    for i in range(?n - m?):
-        start, end = i, i + m
-        if list[?start:end?] == sublist: #blank _:_
-            return ?True?
+def square_color(piece_position):
+    file, rank = to_coordinates(piece_position)
     return False #1given
 
 ## test ##

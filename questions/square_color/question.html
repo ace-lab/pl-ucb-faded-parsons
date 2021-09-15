@@ -13,11 +13,7 @@
 
 <!-- see README for where the various parts of question live -->
 <pl-faded-parsons>
-  def square_color(list, sublist): #0given
-  n, m = len(list), len(sublist)
-  for i in range(!BLANK):
-  start, end = i, i + m
-  if list[!BLANK] == sublist: #blank _:_
-  return !BLANK
+  def square_color(piece_position):
+  file, rank = to_coordinates(piece_position)
   return False #1given
 </pl-faded-parsons>

@@ -1,9 +1,3 @@
-
-
-def square_color(list, sublist): 
-    n, m = len(list), len(sublist)
-    for i in range(n - m):
-        start, end = i, i + m
-        if list[start:end] == sublist: 
-            return True
-    return False 
+def square_color(piece_position):
+    file, rank = to_coordinates(piece_position)
+    return False
