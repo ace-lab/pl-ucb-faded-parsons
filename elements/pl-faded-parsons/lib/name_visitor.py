@@ -1,5 +1,5 @@
 from ast import *
-from typing import Annotated, Any
+from typing import Union, Any
 
 from dataclasses import dataclass
 
@@ -47,19 +47,40 @@ class GlobalNameVisitor(NodeVisitor):
             self.names[key] = None
     
     def visit_FunctionDef(self, node: FunctionDef) -> Any:
-        ann = node.type_comment or 'python function'
+        ann = get_function_type(node)
         desc = get_docstring(node, clean=True)
         self.names[node.name] = (ann, desc)
 
     def visit_AsyncFunctionDef(self, node: AsyncFunctionDef) -> Any:
-        ann = node.type_comment or 'python function'
+        ann = get_function_type(node)
         desc = get_docstring(node, clean=True)
         self.names[node.name] = (ann, desc)
 
-def generate_server(setup_code: str, answer_code: str, no_ast:bool = False, tab:str = '    ') -> str:
+def get_function_type(node: Union[FunctionDef, AsyncFunctionDef]) -> str:
+    if node.type_comment:
+        return node.type_comment
+    unparse_ann = lambda a: unparse(a.annotation) if a.annotation else None
+    arg_types = list(map(unparse_ann, node.args.args))
+    kw_only_types = [(a.arg, unparse_ann(a)) for a in node.args.kwonlyargs]
+    ret_type = node.returns and unparse(node.returns)
+    if ret_type or any(arg_types) or any(t for _, t in kw_only_types):
+        out = 'python fn(' 
+        out += ', '.join(x or 'Any' for x in arg_types)
+        if kw_only_types:
+            out += ', *, '
+            out += ', '.join(n + ': ' + (t or 'Any') for n, t in kw_only_types)
+        out += ')'
+        if ret_type:
+            out += ' -> '
+            out += ret_type
+        return out
+    return 'python function'
+
+def generate_server(setup_code: str, answer_code: str, *, 
+    no_ast: bool = False, tab:str = '    ') -> tuple[str, list[AnnotatedName], list[AnnotatedName]]:
     """Generates a server file by performing analysis on provided code"""
     if no_ast:
-        return SERVER_DEFAULT
+        return (SERVER_DEFAULT, [], [])
     
     try:
         setup_names = GlobalNameVisitor.get_names(setup_code)
@@ -74,7 +95,7 @@ def generate_server(setup_code: str, answer_code: str, no_ast:bool = False, tab:
         answer_names = []
 
     if not setup_names and not answer_names:
-        return SERVER_DEFAULT
+        return (SERVER_DEFAULT, [], [])
     
     def format_annotated_name(name: AnnotatedName) -> str:
         type = name.annotation or 'python var'
@@ -118,4 +139,4 @@ def generate_server(setup_code: str, answer_code: str, no_ast:bool = False, tab:
         , (0, '')
         ]
 
-    return '\n'.join(tab * n + t for n, t in lines)
+    return ('\n'.join(tab * n + t for n, t in lines), setup_names, answer_names)

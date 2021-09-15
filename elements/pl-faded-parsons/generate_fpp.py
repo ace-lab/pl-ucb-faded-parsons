@@ -9,14 +9,14 @@ from uuid import uuid4
 
 from lib.consts import MAIN_PATTERN, SPECIAL_COMMENT_PATTERN, \
     BLANK_SUBSTITUTE, SETUP_CODE_DEFAULT, TEST_DEFAULT
-from lib.name_visitor import generate_server
+from lib.name_visitor import generate_server, AnnotatedName
 from lib.io_helpers import Bcolors, resolve_source_path, file_name, \
     make_if_absent, write_to, file_ext, Namespace, parse_args, auto_detect_sources
 
 def extract_regions(
-    source_code: str, 
+    source_code: str, *,
     keep_comments_in_prompt: bool = False,
-    source_path: str = None) -> Dict[str, str]:
+    source_path: str = None) -> dict[str, str]:
     """ Extracts from well-formatted `source_code` string the text for the question, 
         the problem starting code, the answer code, and any other custom regions
 
@@ -152,12 +152,45 @@ def extract_regions(
 
     return regions
 
-def generate_question_html(prompt_code: str, question_text: str = None, tab='  ') -> str:
+def generate_question_html(
+    prompt_code: str, *, 
+    question_text: str = None, 
+    tab: str ='  ',
+    setup_names: list[AnnotatedName] = None,
+    answer_names: list[AnnotatedName] = None
+    ) -> str:
     """Turn an extracted prompt string into a question html file body"""
     indented = prompt_code.replace('\n', '\n' + tab)
     
     if question_text is None:
         question_text = tab + '<!-- Write the question prompt here -->'
+    elif setup_names or answer_names:
+        question_text = tab + '<h3> Prompt </h3>\n' + question_text
+        
+        question_text += '\n\n<markdown>\n'
+
+        def format_annotated_name(name: AnnotatedName) -> str:
+            out = ''
+            out += ' - `' + name.id
+            if name.annotation:
+                out += ': ' + name.annotation
+            out += '`'
+            if name.description:
+                out += ', ' + name.description
+            out += '\n'
+            return out
+
+        if setup_names:
+            question_text += '### Provided\n'
+            question_text += '\n'.join(map(format_annotated_name, setup_names))
+            if answer_names:
+                question_text += '\n\n'
+        
+        if answer_names:
+            question_text += '### Requried\n'
+            question_text += '\n'.join(map(format_annotated_name, answer_names))
+
+        question_text += '</markdown>\n'
     
     return """<!-- AUTO-GENERATED FILE -->
 <pl-question-panel>
@@ -169,7 +202,7 @@ def generate_question_html(prompt_code: str, question_text: str = None, tab='  '
 {tab}{indented}
 </pl-faded-parsons>""".format(question_text=question_text, tab=tab, indented=indented)
 
-def generate_info_json(question_name: str, indent=4) -> str:
+def generate_info_json(question_name: str, *, indent=4) -> str:
     """ Creates the default info.json for a new FPP question, with a unique v4 UUID.
         Expects `question_name` to be lower snake case.
     """
@@ -193,10 +226,12 @@ def generate_info_json(question_name: str, indent=4) -> str:
     return dumps(info_json, indent=indent) + '\n'
 
 def generate_fpp_question(
-    source_path: PathLike[AnyStr], 
+    source_path: PathLike[AnyStr], *,
     force_generate_json: bool = False,
     no_parse: bool = False,
-    log_details=True):
+    log_details: bool = True,
+    show_required: bool = False
+    ):
     """ Takes a path of a well-formatted source (see `extract_prompt_ans`),
         then generates and populates a question directory of the same name.
     """
@@ -238,9 +273,24 @@ def generate_fpp_question(
     if log_details:
         print('- Populating {} ...'.format(question_dir))
     
+
+    setup_code = remove_region('setup_code', SETUP_CODE_DEFAULT)
+    answer_code = remove_region('answer_code')
+
+    server_code = remove_region('server')
+    gen_server_code, setup_names, answer_names = generate_server(setup_code, answer_code, no_ast=no_parse)
+    server_code = server_code or gen_server_code
+
     prompt_code = remove_region('prompt_code')
     question_text = remove_region('question_text')
-    question_html = generate_question_html(prompt_code, question_text=question_text)
+
+    question_html = generate_question_html(
+        prompt_code, 
+        question_text=question_text,
+        setup_names=setup_names,
+        answer_names=answer_names if show_required else None
+    )
+
     write_to(question_dir, 'question.html', question_html)
     
     json_path = path.join(question_dir, 'info.json')
@@ -253,11 +303,7 @@ def generate_fpp_question(
             Bcolors.warn('  - Overwriting', json_path, 
                 'using \"info.json\" region...' if json_region else '...')
 
-    setup_code = remove_region('setup_code', SETUP_CODE_DEFAULT)
-    answer_code = remove_region('answer_code')
-
-    write_to(question_dir, 'server.py', remove_region('server') or 
-        generate_server(setup_code, answer_code, no_ast=no_parse))
+    write_to(question_dir, 'server.py', server_code)
 
     if log_details:
         print('- Populating {} ...'.format(test_dir))
