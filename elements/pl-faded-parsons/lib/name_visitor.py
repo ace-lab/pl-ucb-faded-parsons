@@ -1,5 +1,5 @@
 from ast import *
-from typing import Any
+from typing import Annotated, Any
 
 from dataclasses import dataclass
 
@@ -9,6 +9,7 @@ from lib.consts import Bcolors, SERVER_DEFAULT
 class AnnotatedName:
     id: str
     annotation: str = None
+    description: str = None
 
 class GlobalNameVisitor(NodeVisitor):
     @staticmethod
@@ -18,7 +19,7 @@ class GlobalNameVisitor(NodeVisitor):
         
         visitor = GlobalNameVisitor()
         visitor.visit(parse(code))
-        return [AnnotatedName(n, annotation=a) for n, a in visitor.names.items()]
+        return [AnnotatedName(n, *t) if t else AnnotatedName(n) for n, t in visitor.names.items()]
     
     def __init__(self) -> None:
         super().__init__()
@@ -33,17 +34,27 @@ class GlobalNameVisitor(NodeVisitor):
     def visit_AnnAssign(self, node: AnnAssign) -> Any:
         key = node.target.id
         if node.simple:
+            ann, desc = node.annotation, None
+            # if hasattr(ann, 'slice'):
+            #     if isinstance(ann.slice, Constant):
+            #         if isinstance(ann.slice.value, str):
+            #             desc = ann.slice.value
+            #             ann = ann.value
             # use unparse to stringify compound types like list[int]
             # and simple types like int
-            self.names[key] = unparse(node.annotation)
+            self.names[key] = (unparse(ann), desc)
         elif key not in self.names:
             self.names[key] = None
     
     def visit_FunctionDef(self, node: FunctionDef) -> Any:
-        self.names[node.name] = node.type_comment or 'python function'
+        ann = node.type_comment or 'python function'
+        desc = get_docstring(node, clean=True)
+        self.names[node.name] = (ann, desc)
 
     def visit_AsyncFunctionDef(self, node: AsyncFunctionDef) -> Any:
-        self.names[node.name] = node.type_comment or 'python async function'
+        ann = node.type_comment or 'python function'
+        desc = get_docstring(node, clean=True)
+        self.names[node.name] = (ann, desc)
 
 def generate_server(setup_code: str, answer_code: str, no_ast:bool = False, tab:str = '    ') -> str:
     """Generates a server file by performing analysis on provided code"""
@@ -67,7 +78,8 @@ def generate_server(setup_code: str, answer_code: str, no_ast:bool = False, tab:
     
     def format_annotated_name(name: AnnotatedName) -> str:
         type = name.annotation or 'python var'
-        return '{"name": "' + name.id + '", "description": "", "type": "' + type + '"},'
+        desc = name.description or ''
+        return '{"name": "' + name.id + '", "description": "' + desc + '", "type": "' + type + '"},'
     
     lines = \
         [ (0, '# AUTO-GENERATED FILE')
