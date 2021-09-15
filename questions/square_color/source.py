@@ -13,9 +13,11 @@ def to_coordinates(pos: str) -> tuple[int, int]:
     """turns a file and rank string (ie 'c3') and turns it into an (int, int)"""
     f_ord, r_ord = tuple(map(ord, pos[:2]))
     return f_ord - ord('a'), r_ord - ord('1')
+
+x = 4
 ## setup_code ##
 
-def square_color(piece_position):
+def square_color(piece_position): #0given
     file, rank = to_coordinates(piece_position)
     return False #1given
 
