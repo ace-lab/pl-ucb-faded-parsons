@@ -1,6 +1,6 @@
 
 
-def is_sublist(list, sublist): 
+def square_color(list, sublist): 
     n, m = len(list), len(sublist)
     for i in range(n - m):
         start, end = i, i + m
