@@ -76,10 +76,11 @@ def get_function_type(node: Union[FunctionDef, AsyncFunctionDef]) -> str:
         return out
     return 'python function'
 
-def generate_server(setup_code: str, answer_code: str, no_ast:bool = False, tab:str = '    ') -> str:
+def generate_server(setup_code: str, answer_code: str, *, 
+    no_ast: bool = False, tab:str = '    ') -> tuple[str, list[AnnotatedName], list[AnnotatedName]]:
     """Generates a server file by performing analysis on provided code"""
     if no_ast:
-        return SERVER_DEFAULT
+        return (SERVER_DEFAULT, [], [])
     
     try:
         setup_names = GlobalNameVisitor.get_names(setup_code)
@@ -94,7 +95,7 @@ def generate_server(setup_code: str, answer_code: str, no_ast:bool = False, tab:
         answer_names = []
 
     if not setup_names and not answer_names:
-        return SERVER_DEFAULT
+        return (SERVER_DEFAULT, [], [])
     
     def format_annotated_name(name: AnnotatedName) -> str:
         type = name.annotation or 'python var'
@@ -138,4 +139,4 @@ def generate_server(setup_code: str, answer_code: str, no_ast:bool = False, tab:
         , (0, '')
         ]
 
-    return '\n'.join(tab * n + t for n, t in lines)
+    return ('\n'.join(tab * n + t for n, t in lines), setup_names, answer_names)

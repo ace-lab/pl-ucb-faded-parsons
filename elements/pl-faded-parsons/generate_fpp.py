@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from lib.consts import MAIN_PATTERN, SPECIAL_COMMENT_PATTERN, \
     BLANK_SUBSTITUTE, SETUP_CODE_DEFAULT, TEST_DEFAULT
-from lib.name_visitor import generate_server
+from lib.name_visitor import generate_server, AnnotatedName
 from lib.io_helpers import Bcolors, resolve_source_path, file_name, \
     make_if_absent, write_to, file_ext, Namespace, parse_args, auto_detect_sources
 
@@ -152,12 +152,43 @@ def extract_regions(
 
     return regions
 
-def generate_question_html(prompt_code: str, question_text: str = None, tab='  ') -> str:
+def generate_question_html(
+    prompt_code: str, *, 
+    question_text: str = None, 
+    tab: str ='  ',
+    setup_names: list[AnnotatedName] = None,
+    answer_names: list[AnnotatedName] = None
+    ) -> str:
     """Turn an extracted prompt string into a question html file body"""
     indented = prompt_code.replace('\n', '\n' + tab)
     
     if question_text is None:
         question_text = tab + '<!-- Write the question prompt here -->'
+    elif setup_names or answer_names:
+        question_text = tab + '<h3> Prompt </h3>\n' + question_text
+        
+        question_text += '<markdown>\n'
+
+        def format_annotated_name(name: AnnotatedName) -> str:
+            out = ''
+            out += ' - `' + name.id
+            if name.annotation:
+                out += ': ' + name.annotation
+            out += '`'
+            if name.description:
+                out += ', ' + name.description
+            out += '\n'
+            return out
+
+        if setup_names:
+            question_text += '### Provided\n'
+            question_text += '\n'.join(map(format_annotated_name, setup_names))
+        
+        if answer_names:
+            question_text += '\n\n### Requried'
+            question_text += '\n'.join(map(format_annotated_name, answer_names))
+
+        question_text += '</markdown>\n'
     
     return """<!-- AUTO-GENERATED FILE -->
 <pl-question-panel>
@@ -238,9 +269,19 @@ def generate_fpp_question(
     if log_details:
         print('- Populating {} ...'.format(question_dir))
     
+
+    setup_code = remove_region('setup_code', SETUP_CODE_DEFAULT)
+    answer_code = remove_region('answer_code')
+
+    server_code = remove_region('server')
+    gen_server_code, setup_names, answer_names = generate_server(setup_code, answer_code, no_ast=no_parse)
+    server_code = server_code or gen_server_code
+
     prompt_code = remove_region('prompt_code')
     question_text = remove_region('question_text')
+
     question_html = generate_question_html(prompt_code, question_text=question_text)
+
     write_to(question_dir, 'question.html', question_html)
     
     json_path = path.join(question_dir, 'info.json')
@@ -253,11 +294,7 @@ def generate_fpp_question(
             Bcolors.warn('  - Overwriting', json_path, 
                 'using \"info.json\" region...' if json_region else '...')
 
-    setup_code = remove_region('setup_code', SETUP_CODE_DEFAULT)
-    answer_code = remove_region('answer_code')
-
-    write_to(question_dir, 'server.py', remove_region('server') or 
-        generate_server(setup_code, answer_code, no_ast=no_parse))
+    write_to(question_dir, 'server.py', server_code)
 
     if log_details:
         print('- Populating {} ...'.format(test_dir))
