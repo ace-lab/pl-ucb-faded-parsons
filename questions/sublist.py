@@ -21,7 +21,7 @@ from pl_helpers import name, points
 from pl_unit_test import PLTestCase
 from code_feedback import Feedback
 
-def test_cases(student_fn, ref_fn, cases):
+def score_cases(student_fn, ref_fn, *cases):
     proportion_correct = 0
     for case in cases:
         user_val = Feedback.call_user(student_fn, *case)
@@ -34,22 +34,22 @@ def test_cases(student_fn, ref_fn, cases):
 
 class Test(PLTestCase):
     @points(2)
-    @name("testing example cases")
+    @name("example cases")
     def test_0(self):
-        test_cases(self.st.is_sublist, self.ref.is_sublist, (
+        score_cases(self.st.is_sublist, self.ref.is_sublist,
             (['a', 'b', 'c', 'd'], ['b', 'c']),
             ([1, 2, 3, 4], [4, 3])
-        ))
+        )
 
     
     @points(8)
     @name("advanced cases")
     def test_1(self):
-        test_cases(self.st.is_sublist, self.ref.is_sublist, (
+        score_cases(self.st.is_sublist, self.ref.is_sublist,
             ([1, 2, 3, 4], [2, 3]),
             ([1, 2, 3, 4], [3, 2]),
             ([1, 2, 3, 4], []),
             ([1, 2, 3, 4], [1, 2, 3, 4]),
             ([1, 2, 3, 4], [1, 2, 3, 4, 5]),
-        ))
+        )
 ## test ##
