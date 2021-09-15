@@ -143,9 +143,12 @@ def extract_regions(
     regions['answer_code'] += unmatched
     
     # remove all whitespace-only lines 
-    # usually as a result of removing comments)
-    # then remove all indentation
+    # usually as a result of removing comments
+    # then remove all indentation and leading ws
     regions['prompt_code'] = '\n'.join(filter(bool, map(str.strip, regions['prompt_code'].splitlines())))
+    # remove trailing ws on each line, 
+    # then remove leading ws
+    regions['answer_code'] = '\n'.join(map(str.rstrip, regions['answer_code'].splitlines())).lstrip()
 
     return regions
 
