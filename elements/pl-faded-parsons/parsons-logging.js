@@ -3,7 +3,7 @@
         this.widget = widget;
         this.events = [];
         this.last_field_update = null;
-    };
+    };   
 
     window['ParsonsLogger'] = ParsonsLogger;
 
