@@ -9,7 +9,6 @@
         {
             "title": "FP",
             "questions": [
-                { "id": "compute_poly", "points": 10 },
                 { "id": "sublist", "points": 10 },
                 { "id": "square_color", "points": 10 }
             ]
