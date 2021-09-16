@@ -40,6 +40,7 @@ var ParsonsGlobal = {
    * For now, no logging of events is done.
    */
   setup: function() {
+    $('#ul-parsons-solution').on('load', () => console.log('load'))
     ParsonsGlobal.widget = new ParsonsWidget({
       'sortableId': 'parsons-solution',
       'onSortableUpdate': (event, ui) => {
@@ -58,10 +59,20 @@ var ParsonsGlobal = {
     $('input.text-box').on('input', ParsonsGlobal.adjustBlankWidth);
     // when form submitted, grab the student work and put it into hidden form fields
     $('form.question-form').submit(ParsonsGlobal.submitHandler);
-    
+
     if (ParsonsLogger && !ParsonsGlobal.logger) {
       ParsonsGlobal.logger = new ParsonsLogger(ParsonsGlobal.widget);
     }
+
+    // TODO: fix this for real.
+    // a terrible, terrible solution to the problem that codelines
+    // will remember their indent in the view, but not in model
+    setTimeout(function() {
+      ParsonsGlobal.widget.modified_lines.forEach(line => {
+        let leftMargin = parseInt(line.elem()[0].style.marginLeft, 10); // auto-ignores px suffix bc parseInt is stupid
+        line.indent = Math.floor(leftMargin / ParsonsGlobal.widget.options.x_indent);
+      })
+    }, 50);
   }
 }
 
