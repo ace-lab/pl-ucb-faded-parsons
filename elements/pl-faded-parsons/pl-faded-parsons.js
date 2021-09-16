@@ -40,7 +40,6 @@ var ParsonsGlobal = {
    * For now, no logging of events is done.
    */
   setup: function() {
-    $('#ul-parsons-solution').on('load', () => console.log('load'))
     ParsonsGlobal.widget = new ParsonsWidget({
       'sortableId': 'parsons-solution',
       'onSortableUpdate': (event, ui) => {
@@ -60,7 +59,7 @@ var ParsonsGlobal = {
     // when form submitted, grab the student work and put it into hidden form fields
     $('form.question-form').submit(ParsonsGlobal.submitHandler);
 
-    if (ParsonsLogger && !ParsonsGlobal.logger) {
+    if ((typeof ParsonsLogger !== 'undefined') && !ParsonsGlobal.logger) {
       ParsonsGlobal.logger = new ParsonsLogger(ParsonsGlobal.widget);
     }
 

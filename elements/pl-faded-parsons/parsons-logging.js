@@ -1,32 +1,49 @@
-(function() {
-    var ParsonsLogger = function(widget) {
+// // Import the functions you need from the SDKs you need
+// import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.2/firebase-app.js";
+// import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.0.2/firebase-analytics.js";
+// // TODO: Add SDKs for Firebase products that you want to use
+// // https://firebase.google.com/docs/web/setup#available-libraries
+
+// // Your web app's Firebase configuration
+// // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// const firebaseConfig = {
+//   apiKey: "AIzaSyD3RdPsfO50vjyFKD6wYseNvdaQZFRslZg",
+//   authDomain: "faded-parsons-logging.firebaseapp.com",
+//   projectId: "faded-parsons-logging",
+//   storageBucket: "faded-parsons-logging.appspot.com",
+//   messagingSenderId: "591608062092",
+//   appId: "1:591608062092:web:4b4e4963e6026136119ba9",
+//   measurementId: "G-NCF4CRWMHG"
+// };
+
+// // Initialize Firebase
+// const app = initializeApp(firebaseConfig);
+// const analytics = getAnalytics(app);
+
+class ParsonsLogger {
+    constructor(widget) {
         this.widget = widget;
         this.events = [];
         this.last_field_update = null;
-    };   
-
-    window['ParsonsLogger'] = ParsonsLogger;
-
-    ParsonsLogger.prototype.logEvent = function(e) {
+    }
+    logEvent(e) {
         e['widgetId'] = this.widget.options.sortableId;
         e['time'] = e['time'] || Date.now();
         this.events.push(e);
-    };
-
-    ParsonsLogger.prototype.onSubmit = function() {
+    }
+    onSubmit() {
         const e = { type: 'submit' };
 
         console.log('submit event', e);
         this.logEvent(e);
-    };
-
-    ParsonsLogger.prototype.onSortableUpdate = function(event, ui) {
+    }
+    onSortableUpdate(event, ui) {
         console.log(event);
-    };
+    }
+    finishTypingEvent() {
+        if (!this.last_field_update)
+            return;
 
-    ParsonsLogger.prototype.finishTypingEvent = function() {
-        if (!this.last_field_update) return;
-        
         clearTimeout(this.last_field_update.timeout);
 
         const e = {
@@ -42,10 +59,9 @@
 
         this.last_field_update = null;
     }
-
-    ParsonsLogger.prototype.onBlankUpdate = function(event, codeline) {
+    onBlankUpdate(event, codeline) {
         switch (event.inputType) {
-            case 'insertFromPaste': 
+            case 'insertFromPaste':
             case 'insertFromPasteAsQuotation':
             case 'insertFromDrop':
                 this.finishTypingEvent();
@@ -62,8 +78,8 @@
                 break;
             case 'deleteByDrag':
             case 'deleteByCut':
-                // do something special?
-                // right now just continues to default...
+            // do something special?
+            // right now just continues to default...
             default: // generic typing event
                 if (this.last_field_update) {
                     // if the last update was to a different field, finish the previous event
@@ -74,15 +90,15 @@
                         clearTimeout(this.last_field_update.timeout);
                     }
                 }
-                
-                this.last_field_update = { 
-                    codelineName: codeline.name, 
-                    e: event, 
-                    start: this.last_field_update ? 
+
+                this.last_field_update = {
+                    codelineName: codeline.name,
+                    e: event,
+                    start: this.last_field_update ?
                         this.last_field_update.start : Date.now(),
                     value: codeline.value,
                     timeout: setTimeout(() => this.finishTypingEvent(), 1000),
                 };
         }
     }
-})();
+}
