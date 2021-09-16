@@ -40,7 +40,6 @@ var ParsonsGlobal = {
    * For now, no logging of events is done.
    */
   setup: function() {
-    $('#ul-parsons-solution').on('load', () => console.log('load'))
     ParsonsGlobal.widget = new ParsonsWidget({
       'sortableId': 'parsons-solution',
       'onSortableUpdate': (event, ui) => {
