@@ -1,96 +1,5 @@
-var trimRegexp = /^\s*(.*?)\s*$/;
-var givenIndentRegexp = /#(\d+)given\s*/;
-var blankRegexp = /#blank([^#]*)/;
-var userStrings = {
-  trash_label: "Drag from here",
-  solution_label: "Construct your solution here, including indents",
-  order: function () {
-    return "Code fragments in your program are wrong, or in wrong order. This can be fixed by moving, removing, or replacing highlighted fragments.";
-  },
-  lines_missing: function () {
-    return "Your program has too few code fragments.";
-  },
-  lines_too_many: function () {
-    return "Your program has too many code fragments.";
-  },
-  no_matching: function (lineNro) {
-    return (
-      "Based on language syntax, the highlighted fragment (" +
-      lineNro +
-      ") is not correctly indented."
-    );
-  },
-  no_matching_open: function (lineNro, block) {
-    return "The " + block + " ended on line " + lineNro + " never started.";
-  },
-  no_matching_close: function (lineNro, block) {
-    return (
-      "Block " + block + " defined on line " + lineNro + " not ended properly"
-    );
-  },
-  block_close_mismatch: function (closeLine, closeBlock, openLine, inBlock) {
-    return (
-      "Cannot end block " +
-      closeBlock +
-      " on line " +
-      closeLine +
-      " when still inside block " +
-      inBlock +
-      " started on line " +
-      openLine
-    );
-  },
-  block_structure: function (lineNro) {
-    return (
-      "The highlighted fragment " +
-      lineNro +
-      " belongs to a wrong block (i.e. indentation)."
-    );
-  },
-  unittest_error: function (errormsg) {
-    return (
-      "<span class='msg'>Error in parsing/executing your program</span><br/> <span class='errormsg'>" +
-      errormsg +
-      "</span>"
-    );
-  },
-  unittest_output_assertion: function (expected, actual) {
-    return (
-      "Expected output: <span class='expected output'>" +
-      expected +
-      "</span>" +
-      "Output of your program: <span class='actual output'>" +
-      actual +
-      "</span>"
-    );
-  },
-  unittest_assertion: function (expected, actual) {
-    return (
-      "Expected value: <span class='expected'>" +
-      expected +
-      "</span><br>" +
-      "Actual value: <span class='actual'>" +
-      actual +
-      "</span>"
-    );
-  },
-  variabletest_assertion: function (varname, expected, actual) {
-    return (
-      "Expected value of variable " +
-      varname +
-      ": <span class='expected'>" +
-      expected +
-      "</span><br>" +
-      "Actual value: <span class='actual'>" +
-      actual +
-      "</span>"
-    );
-  },
-};
+const givenIndentRegexp = /#(\d+)given\s*/;
 
-// Different graders
-
-var graders = {};
 // The "original" grader for giving line based feedback.
 class LineBasedGrader {
   constructor(parson) {
@@ -237,7 +146,6 @@ class LineBasedGrader {
     };
   }
 }
-graders.LineBasedGrader = LineBasedGrader;
 
 // Create a line object skeleton with only code and indentation from
 // a code string of an assignment definition string (see parseCode)
@@ -251,11 +159,11 @@ class ParsonsCodeline {
       // represent newlines => replace them with actual new line characters "\n"
       this.code = codestring
         .replace(/#distractor\s*$/, "")
-        .replace(trimRegexp, "$1")
+        .replace(ParsonsCodeline.trimRegexp, "$1")
         .replace(/\\n/g, "\n");
       this.code = codestring
         .replace(givenIndentRegexp, "")
-        .replace(trimRegexp, "$1")
+        .replace(ParsonsCodeline.trimRegexp, "$1")
         .replace(/\\n/g, "\n");
       this.indent = codestring.length - codestring.replace(/^\s+/, "").length;
     }
@@ -274,6 +182,7 @@ class ParsonsCodeline {
     this.elem().addClass(this.widget.FEEDBACK_STYLES.incorrectIndent);
   }
 }
+ParsonsCodeline.trimRegexp = /^\s*(.*?)\s*$/;
 
 // Creates a parsons widget. Init must be called after creating an object.
 class ParsonsWidget {
@@ -313,10 +222,10 @@ class ParsonsWidget {
 
     // translate trash_label and solution_label
     if (!this.options.hasOwnProperty("trash_label")) {
-      this.options.trash_label = userStrings.trash_label;
+      this.options.trash_label = ParsonsWidget.userStrings.trash_label;
     }
     if (!this.options.hasOwnProperty("solution_label")) {
-      this.options.solution_label = userStrings.solution_label;
+      this.options.solution_label = ParsonsWidget.userStrings.solution_label;
     }
     this.FEEDBACK_STYLES = {
       correctPosition: "correctPosition",
@@ -391,7 +300,7 @@ class ParsonsWidget {
     $.each(normalized, function (_index, item) {
       if (item.indent < 0) {
         // Indentation error
-        errors.push(userStrings.no_matching(normalized.orig));
+        errors.push(ParsonsWidget.userStrings.no_matching(normalized.orig));
       }
       widgetData.push(item);
     });
@@ -533,12 +442,25 @@ class ParsonsWidget {
    * leftDiff horizontal difference from (before and after drag) in px
    ***/
   updateIndent(leftDiff, id) {
-    var code_line = this.getLineById(id);
-    var new_indent = this.options.can_indent
+    const code_line = this.getLineById(id);
+    let new_indent = this.options.can_indent
       ? code_line.indent + Math.floor(leftDiff / this.options.x_indent)
       : 0;
     new_indent = Math.max(0, new_indent);
-    code_line.indent = new_indent;
+
+    if (code_line.indent !== new_indent) {
+      this.options.onSortableUpdate(
+        {
+          type: "indentChange",
+          id: id,
+          old: code_line.indent,
+          new: new_indent,
+        },
+        $("#ul-" + this.options.sortableId).sortable("toArray")
+      );
+      code_line.indent = new_indent;
+    }
+
     return new_indent;
   }
   // Get a line object by the full id including id prefix
@@ -809,9 +731,9 @@ class ParsonsWidget {
     while (codeline.code.search(/!BLANK/) >= 0) {
       var replaceText = "";
       console.log(codeline.code);
-      if (codeline.code.search(blankRegexp) >= 0) {
-        replaceText = codeline.code.match(blankRegexp)[1].trim();
-        codeline.code = codeline.code.replace(blankRegexp, "");
+      if (codeline.code.search(ParsonsWidget.blankRegexp) >= 0) {
+        replaceText = codeline.code.match(ParsonsWidget.blankRegexp)[1].trim();
+        codeline.code = codeline.code.replace(ParsonsWidget.blankRegexp, "");
       }
       const inputFieldName =
         codeline.id.toString() + "-" + numBlanksThisLine.toString();
@@ -941,5 +863,93 @@ class ParsonsWidget {
     this.addLogEntry({ type: "init", time: new Date(), bindings: bindings });
   }
 }
-ParsonsWidget._graders = graders;
 
+ParsonsWidget._graders = { "LineBasedGrader": LineBasedGrader };
+ParsonsWidget.blankRegexp = /#blank([^#]*)/;
+
+ParsonsWidget.userStrings = {
+  trash_label: "Drag from here",
+  solution_label: "Construct your solution here, including indents",
+  order: function () {
+    return "Code fragments in your program are wrong, or in wrong order. This can be fixed by moving, removing, or replacing highlighted fragments.";
+  },
+  lines_missing: function () {
+    return "Your program has too few code fragments.";
+  },
+  lines_too_many: function () {
+    return "Your program has too many code fragments.";
+  },
+  no_matching: function (lineNro) {
+    return (
+      "Based on language syntax, the highlighted fragment (" +
+      lineNro +
+      ") is not correctly indented."
+    );
+  },
+  no_matching_open: function (lineNro, block) {
+    return "The " + block + " ended on line " + lineNro + " never started.";
+  },
+  no_matching_close: function (lineNro, block) {
+    return (
+      "Block " + block + " defined on line " + lineNro + " not ended properly"
+    );
+  },
+  block_close_mismatch: function (closeLine, closeBlock, openLine, inBlock) {
+    return (
+      "Cannot end block " +
+      closeBlock +
+      " on line " +
+      closeLine +
+      " when still inside block " +
+      inBlock +
+      " started on line " +
+      openLine
+    );
+  },
+  block_structure: function (lineNro) {
+    return (
+      "The highlighted fragment " +
+      lineNro +
+      " belongs to a wrong block (i.e. indentation)."
+    );
+  },
+  unittest_error: function (errormsg) {
+    return (
+      "<span class='msg'>Error in parsing/executing your program</span><br/> <span class='errormsg'>" +
+      errormsg +
+      "</span>"
+    );
+  },
+  unittest_output_assertion: function (expected, actual) {
+    return (
+      "Expected output: <span class='expected output'>" +
+      expected +
+      "</span>" +
+      "Output of your program: <span class='actual output'>" +
+      actual +
+      "</span>"
+    );
+  },
+  unittest_assertion: function (expected, actual) {
+    return (
+      "Expected value: <span class='expected'>" +
+      expected +
+      "</span><br>" +
+      "Actual value: <span class='actual'>" +
+      actual +
+      "</span>"
+    );
+  },
+  variabletest_assertion: function (varname, expected, actual) {
+    return (
+      "Expected value of variable " +
+      varname +
+      ": <span class='expected'>" +
+      expected +
+      "</span><br>" +
+      "Actual value: <span class='actual'>" +
+      actual +
+      "</span>"
+    );
+  },
+};
