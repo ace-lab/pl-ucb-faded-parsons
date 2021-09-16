@@ -71,7 +71,7 @@
       // codeline in the student's code for the LIS computation and, for example,
       // assigns appropriate indices for duplicate lines.
       var lastFoundCodeIndex = {};
-      $.each(studentCodeLineObjects, function (index, lineObject) {
+      $.each(studentCodeLineObjects, function (_index, lineObject) {
         // find the first matching line in the model solution
         // starting from where we have searched previously
         for (var i = (typeof (lastFoundCodeIndex[lineObject.code]) !== 'undefined') ? lastFoundCodeIndex[lineObject.code] + 1 : 0; i < parson.model_solution.length; i++) {
@@ -194,7 +194,7 @@
     }
   }
   // expose the type for testing, extending etc
-  window.ParsonsCodeline = ParsonsCodeline;
+  window['ParsonsCodeline'] = ParsonsCodeline;
 
   // Creates a parsons widget. Init must be called after creating an object.
    class ParsonsWidget {
@@ -224,8 +224,8 @@
         'first_error_only': true,
         'max_wrong_lines': 10,
         'lang': 'en',
-        'onSortableUpdate': (event, ui) => { },
-        'onBlankUpdate': (event, codeline) => { },
+        'onSortableUpdate': (_event, _ui) => { },
+        'onBlankUpdate': (_event, _codeline) => { },
       };
 
       this.options = jQuery.extend({}, defaults, options);
@@ -303,7 +303,7 @@
 
       var normalized = this.normalizeIndents(indented);
 
-      $.each(normalized, function (index, item) {
+      $.each(normalized, function (_index, item) {
         if (item.indent < 0) {
           // Indentation error
           errors.push(userStrings.no_matching(normalized.orig));
@@ -311,7 +311,7 @@
         widgetData.push(item);
       });
 
-      $.each(given, function (index, item) {
+      $.each(given, function (_index, item) {
         console.log(item);
         widgetData.push(item);
       });
@@ -470,37 +470,6 @@
       // breaks when a line has an unindent that does not match outer indentation
       // level.
       return lines;
-
-      var normalized = [];
-      var new_line;
-      var match_indent = function (index) {
-        //return line index from the previous lines with matching indentation
-        for (var i = index - 1; i >= 0; i--) {
-          if (lines[i].indent == lines[index].indent) {
-            return normalized[i].indent;
-          }
-        }
-        return -1;
-      };
-      for (var i = 0; i < lines.length; i++) {
-        //create shallow copy from the line object
-        new_line = jQuery.extend({}, lines[i]);
-        if (i === 0) {
-          new_line.indent = 0;
-          if (lines[i].indent !== 0) {
-            new_line.indent = -1;
-          }
-        } else if (lines[i].indent == lines[i - 1].indent) {
-          new_line.indent = normalized[i - 1].indent;
-        } else if (lines[i].indent > lines[i - 1].indent) {
-          new_line.indent = normalized[i - 1].indent + 1;
-        } else {
-          // indentation can be -1 if no matching indentation exists, i.e. IndentationError in Python
-          new_line.indent = match_indent(i);
-        }
-        normalized[i] = new_line;
-      }
-      return normalized;
     }
     /**
         * Retrieve the code lines based on what is in the DOM
@@ -509,7 +478,7 @@
         * */
     getModifiedCode(search_string) {
       //ids of the the modified code
-      var lines_to_return = [], solution_ids = $(search_string).sortable('toArray'), i, item;
+      var lines_to_return = [], solution_ids = $(search_string).sortable('toArray'), item;
       for (let i = 0; i < solution_ids.length; i++) {
         item = this.getLineById(solution_ids[i]);
         lines_to_return.push($.extend(new ParsonsCodeline(), item));
@@ -517,9 +486,7 @@
       return lines_to_return;
     }
     hashToIDList(hash) {
-      var lines = [];
       var lineValues;
-      var lineObject;
       var h;
 
       if (hash === "-" || hash === "" || hash === null) {
@@ -592,7 +559,7 @@
       if (this.feedback_exists) {
         $("#ul-" + this.options.sortableId).removeClass("incorrect correct");
         var li_elements = $("#ul-" + this.options.sortableId + " li");
-        $.each(this.FEEDBACK_STYLES, function (index, value) {
+        $.each(this.FEEDBACK_STYLES, function (_index, value) {
           li_elements.removeClass(value);
         });
       }
@@ -772,9 +739,7 @@
             that.updateHTMLIndent(ui.item[0].id);
             that.addLogEntry({ type: "moveOutput", target: ui.item[0].id }, true);
           },
-          receive: function (event, ui) {
-            var ind = that.updateIndent(ui.position.left - ui.item.parent().position().left,
-              ui.item[0].id);
+          receive: function (_event, ui) {
             that.updateHTMLIndent(ui.item[0].id);
             that.addLogEntry({ type: "addOutput", target: ui.item[0].id }, true);
           },
@@ -787,7 +752,7 @@
           {
             connectWith: sortable,
             start: function () { that.clearFeedback(); },
-            receive: function (event, ui) {
+            receive: function (_event, ui) {
               that.getLineById(ui.item[0].id).indent = 0;
               that.updateHTMLIndent(ui.item[0].id);
               that.addLogEntry({ type: "removeOutput", target: ui.item[0].id }, true);
@@ -802,7 +767,7 @@
           });
         sortable.sortable('option', 'connectWith', trash);
       }
-      $.each(solutionIDs, function (index, id) {
+      $.each(solutionIDs, function (_index, id) {
         that.updateHTMLIndent(id);
       });
       // set up event listeners on input fields for blanks
