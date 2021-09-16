@@ -1,0 +1,17 @@
+{
+    "uuid": "22980669-0b17-4cb4-9e76-4b83611064d8",
+    "title": "Square Color Final",
+    "topic": "",
+    "tags": [
+        "berkeley",
+        "fp"
+    ],
+    "type": "v3",
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 5
+    }
+}

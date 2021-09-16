@@ -9,7 +9,7 @@ def generate(data):
     ]
     # Define outgoing variables here
     names_from_user = [
-        {"name": "square_color", "description": "", "type": "python function"},
+        {"name": "is_sublist", "description": "", "type": "python function"},
     ]
 
     data["params"]["names_for_user"] = names_for_user
