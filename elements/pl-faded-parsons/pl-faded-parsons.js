@@ -69,8 +69,10 @@ var ParsonsGlobal = {
     // will remember their indent in the view, but not in model
     setTimeout(function() {
       ParsonsGlobal.widget.modified_lines.forEach(line => {
-        let leftMargin = parseInt(line.elem()[0].style.marginLeft, 10); // auto-ignores px suffix bc parseInt is stupid
-        line.indent = Math.floor(leftMargin / ParsonsGlobal.widget.options.x_indent);
+        const leftMargin = parseInt(line.elem()[0].style.marginLeft, 10); // auto-ignores px suffix bc parseInt is stupid
+        if (!isNaN(leftMargin)) {
+          line.indent = Math.floor(leftMargin / ParsonsGlobal.widget.options.x_indent);
+        }
       })
     }, 50);
   }
