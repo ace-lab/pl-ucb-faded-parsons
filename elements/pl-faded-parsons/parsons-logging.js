@@ -20,35 +20,30 @@
 // const app = initializeApp(firebaseConfig);
 // const analytics = getAnalytics(app);
 
-(function() {
-    var ParsonsLogger = function(widget) {
+class ParsonsLogger {
+    constructor(widget) {
         this.widget = widget;
         this.events = [];
         this.last_field_update = null;
-    };   
-
-    window['ParsonsLogger'] = ParsonsLogger;
-
-    ParsonsLogger.prototype.logEvent = function(e) {
+    }
+    logEvent(e) {
         e['widgetId'] = this.widget.options.sortableId;
         e['time'] = e['time'] || Date.now();
         this.events.push(e);
-    };
-
-    ParsonsLogger.prototype.onSubmit = function() {
+    }
+    onSubmit() {
         const e = { type: 'submit' };
 
         console.log('submit event', e);
         this.logEvent(e);
-    };
-
-    ParsonsLogger.prototype.onSortableUpdate = function(event, ui) {
+    }
+    onSortableUpdate(event, ui) {
         console.log(event);
-    };
+    }
+    finishTypingEvent() {
+        if (!this.last_field_update)
+            return;
 
-    ParsonsLogger.prototype.finishTypingEvent = function() {
-        if (!this.last_field_update) return;
-        
         clearTimeout(this.last_field_update.timeout);
 
         const e = {
@@ -64,10 +59,9 @@
 
         this.last_field_update = null;
     }
-
-    ParsonsLogger.prototype.onBlankUpdate = function(event, codeline) {
+    onBlankUpdate(event, codeline) {
         switch (event.inputType) {
-            case 'insertFromPaste': 
+            case 'insertFromPaste':
             case 'insertFromPasteAsQuotation':
             case 'insertFromDrop':
                 this.finishTypingEvent();
@@ -84,8 +78,8 @@
                 break;
             case 'deleteByDrag':
             case 'deleteByCut':
-                // do something special?
-                // right now just continues to default...
+            // do something special?
+            // right now just continues to default...
             default: // generic typing event
                 if (this.last_field_update) {
                     // if the last update was to a different field, finish the previous event
@@ -96,15 +90,15 @@
                         clearTimeout(this.last_field_update.timeout);
                     }
                 }
-                
-                this.last_field_update = { 
-                    codelineName: codeline.name, 
-                    e: event, 
-                    start: this.last_field_update ? 
+
+                this.last_field_update = {
+                    codelineName: codeline.name,
+                    e: event,
+                    start: this.last_field_update ?
                         this.last_field_update.start : Date.now(),
                     value: codeline.value,
                     timeout: setTimeout(() => this.finishTypingEvent(), 1000),
                 };
         }
     }
-})();
+}
