@@ -62,6 +62,15 @@ var ParsonsGlobal = {
     if (ParsonsLogger && !ParsonsGlobal.logger) {
       ParsonsGlobal.logger = new ParsonsLogger(ParsonsGlobal.widget);
     }
+
+    // a terrible, terrible solution to the problem that codelines
+    // will remember their indent in the view, but not in model
+    setTimeout(function() {
+      ParsonsGlobal.widget.modified_lines.forEach(line => {
+        let leftMargin = parseInt(line.elem()[0].style.marginLeft, 10); // auto-ignores px suffix bc parseInt is stupid
+        line.indent = Math.floor(leftMargin / ParsonsGlobal.widget.options.x_indent);
+      })
+    }, 50);
   }
 }
 
