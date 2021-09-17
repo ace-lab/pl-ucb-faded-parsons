@@ -1,4 +1,4 @@
-""" Make a function <code>is_sublist</code> that checks wether the first
+""" Make a function <code>is_sublist</code> that checks whether the first
     argument contains the second as a sublist (including ordering), eg
 
     <pl-code language="python">
@@ -9,11 +9,14 @@
 """
 
 def is_sublist(list, sublist): #0given
-    n, m = len(list), len(sublist)
+    n, m = len(list), len(sublist) #1given
+    # we only want to search to the last place
+    # where the sublist could occur (n - m - 1)
     for i in range(?n - m?):
         start, end = i, i + m
+        # compare to the slice of len m at i
         if list[?start:end?] == sublist: #blank _:_
-            return ?True?
+            return ?True? # return early!
     return False #1given
 
 ## test ##

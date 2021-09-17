@@ -4,7 +4,7 @@
 def generate(data):
     # Define incoming variables here
     names_for_user = [
-        {"name": "to_coordinates", "description": "Turns a file and rank string and turns it into an (int, int), eg 'a1' -> (0, 0), 'd6' -> (3, 5)", "type": "python fn(str) -> tuple[int, int]"},
+        {"name": "to_coordinates", "description": "turns a file-and-rank string and turns it into an (int, int), eg 'a1' -> (0, 0), 'd6' -> (3, 5)", "type": "python fn(str) -> tuple[int, int]"},
     ]
     # Define outgoing variables here
     names_from_user = [
