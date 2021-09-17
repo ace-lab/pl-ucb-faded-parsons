@@ -32,7 +32,7 @@ def auto_detect_sources() -> list[PathLike[AnyStr]]:
     
     if exists(questions_dir):
         resolve = lambda n: join(questions_dir, n)
-        is_valid = lambda f: isfile(f)
+        is_valid = lambda f: isfile(f) and file_ext(f).endswith('py')
         return list(filter(is_valid, map(resolve, listdir(questions_dir))))
     
     Bcolors.fail('** Auto-dection failed. Please provide source paths (--help for more info) **')
