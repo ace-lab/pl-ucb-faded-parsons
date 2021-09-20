@@ -2,13 +2,13 @@ from typing import *
 
 from collections import defaultdict, namedtuple
 from json import dumps
-from os import path, PathLike
+from os import getcwd, path, PathLike
 from re import finditer, match as test
 from shutil import copyfile
 from uuid import uuid4
 
 from lib.consts import MAIN_PATTERN, SPECIAL_COMMENT_PATTERN, \
-    BLANK_SUBSTITUTE, SETUP_CODE_DEFAULT, TEST_DEFAULT
+    BLANK_SUBSTITUTE, SETUP_CODE_DEFAULT, TEST_DEFAULT, REGION_IMPORT_PATTERN
 from lib.name_visitor import generate_server, AnnotatedName
 from lib.io_helpers import Bcolors, resolve_source_path, file_name, \
     make_if_absent, write_to, file_ext, Namespace, parse_args, auto_detect_sources
@@ -82,7 +82,9 @@ def extract_regions(
         # only one of these is ever non-None
         region_delim, comment, docstring, string, blank_ans = match.groups()
         
-        if region_delim:
+        if region_delim is not None:
+            if not len(region_delim):
+                raise SyntaxError("Regions must be named (ie ## test ##) " + format_line(line_number))
             if current_region:
                 if region_delim != current_region.id:
                     raise SyntaxError(
@@ -90,11 +92,30 @@ def extract_regions(
                             region_delim, 
                             format_line(current_region.line), 
                             current_region.id, 
-                            format_line(line_number + 1)))
+                            format_line(line_number + 1))
+                    )
                 else:
                     current_region = None
             else:
-                current_region = RegionToken(line_number + 1, region_delim)
+                import_region = test(REGION_IMPORT_PATTERN, region_delim)
+                if import_region:
+                    region_source, alias = import_region.groups()
+                    if not path.exists(region_source):
+                        region_source = path.join(path.dirname(source_path), region_source)
+                    if not path.exists(region_source):
+                        print(path.abspath(region_source))
+                        raise FileNotFoundError(
+                            "Region \"{}\" failed on import. Could not find {} at {}".format( 
+                            alias, region_source, format_line(line_number)))
+                    try: 
+                        with open(region_source, 'r') as f: #OSError
+                            regions[alias] += ''.join(f.readlines())
+                    except OSError as e:
+                        raise OSError(
+                            "Region \"{}\" failed on import. Could not read {}:\n\t\t{}\n\tat {}".format(
+                                alias, region_source, e.strerror, format_line(line_number)))
+                else:
+                    current_region = RegionToken(line_number + 1, region_delim)
         elif current_region:
             regions[current_region.id] += next(filter(bool, match.groups()))
         elif comment:
@@ -165,7 +186,7 @@ def generate_question_html(
     if question_text is None:
         question_text = tab + '<!-- Write the question prompt here -->'
     elif setup_names or answer_names:
-        question_text = tab + '<h3> Prompt </h3>\n' + question_text
+        question_text = tab + '<h3> Prompt </h3>\n' + tab + question_text
         
         question_text += '\n\n<markdown>\n'
 
@@ -349,8 +370,8 @@ def generate_many(args: Namespace):
             return True
         except SyntaxError as e:
             Bcolors.fail('SyntaxError:', e.msg)
-        except FileNotFoundError:
-            Bcolors.fail('FileNotFoundError:', source_path)
+        except OSError as e:
+            Bcolors.fail('FileNotFoundError:', *e.args)
         
         return False
     

@@ -112,15 +112,7 @@ SPECIAL_COMMENT_PATTERN: Final[Pattern] = compile(r'^#(blank[^#]*|\d+given)\s*')
 
 BLANK_SUBSTITUTE: Final[str] = '!BLANK'
 
-SPECIAL_REGIONS: Final[str] = {
-    'setup': join('test', 'setup_code.py'),
-    'setup_code': join('test', 'setup_code.py'),
-    'ans': join('test', 'ans.py'),
-    'answer': join('test', 'ans.py'),
-    'answer_code': join('test', 'ans.py'),
-    'question': 'question_text',
-    'question_code': 'question_text'
-}
+REGION_IMPORT_PATTERN: Final[Pattern] = compile(r'^\s*import\s*(\w.*)\s+as\s+(\w.*?)\s*$')
 
 PROGRAM_DESCRIPTION: Final[str] = Bcolors.f(Bcolors.OKGREEN, ' A tool for generating faded parsons problems.') + """
 
