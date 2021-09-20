@@ -140,4 +140,8 @@ PROGRAM_DESCRIPTION: Final[str] = Bcolors.f(Bcolors.OKGREEN, ' A tool for genera
      - Code in `setup_code` will be parsed to extract exposed names unless the --no-parse
        flag is set. Type annotations and function docstrings are used to fill out server.py
      - Any custom region that clashes with an automatically generated file name
-       will overwrite the automatically generated code"""
+       will overwrite the automatically generated code
+ - Import regions allow for the contents of arbitrary files to be loaded as regions
+     - They are formatted as `## import {rel_file_path} as {region name} ##`
+        where `rel_file_path` is the relative path to the file from the source file
+     - Like regular regions, they cannot be used inside of another region"""
