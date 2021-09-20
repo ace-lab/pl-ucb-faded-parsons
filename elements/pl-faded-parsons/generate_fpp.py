@@ -36,6 +36,18 @@ def extract_regions(
             - A maximum of one region may be open at a time
             - All text in a region is only copied into that region
             - Regions must be closed before the end of the source string
+            - Text will be copied into a new file with the regions name in the
+            question directory, excluding these special regions:
+                explicit: `test` `setup_code`
+                implicit: `answer_code` `prompt_code` `question_text`
+            - Code in `setup_code` will be parsed to extract exposed names unless the --no-parse
+            flag is set. Type annotations and function docstrings are used to fill out server.py
+            - Any custom region that clashes with an automatically generated file name
+            will overwrite the automatically generated code
+        - Import regions allow for the contents of arbitrary files to be loaded as regions
+            - They are formatted as `## import {rel_file_path} as {region name} ##`
+                where `rel_file_path` is the relative path to the file from the source file
+            - Like regular regions, they cannot be used inside of another region
         
             
         e.g.
