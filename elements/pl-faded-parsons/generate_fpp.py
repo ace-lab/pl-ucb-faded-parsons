@@ -2,7 +2,7 @@ from typing import *
 
 from collections import defaultdict, namedtuple
 from json import dumps
-from os import getcwd, path, PathLike
+from os import path, PathLike
 from re import finditer, match as test
 from shutil import copyfile
 from uuid import uuid4
