@@ -1,7 +1,4 @@
-<!-- AUTO-GENERATED FILE -->
-<pl-question-panel>
-  <h3> Prompt </h3>
-  Make a function <code>square_color</code> that tells if a chess 
+Make a function <code>square_color</code> that tells if a chess 
 square is black based off of its position (see the labeled board below).
 <br>
 <img src="https://www.dummies.com/wp-content/uploads/201843.image0.jpg" 
@@ -26,19 +23,3 @@ print([x % 3 for x in nums])
 >> [0, 1, 2, 0, 1, 2, 0, 1, 2]</pl-code>
 
 It turns 0..8 into (0, 1 , 2) repeating!
-
-<markdown>
-### Provided
- - `to_coordinates: python fn(str) -> tuple[int, int]`, turns a file-and-rank string and turns it into an (int, int), eg 'a1' -> (0, 0), 'd6' -> (3, 5)
-</markdown>
-
-</pl-question-panel>
-
-<!-- see README for where the various parts of question live -->
-<pl-faded-parsons>
-  def square_color(pos): #0given
-  file, rank = to_coordinates(pos)
-  black_first_square = file % !BLANK == 0
-  same_as_first = rank % !BLANK == 0
-  return black_first_square == same_as_first
-</pl-faded-parsons>
