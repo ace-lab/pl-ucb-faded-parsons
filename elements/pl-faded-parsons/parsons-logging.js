@@ -1,24 +1,19 @@
-// // Import the functions you need from the SDKs you need
-// import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.2/firebase-app.js";
-// import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.0.2/firebase-analytics.js";
-// // TODO: Add SDKs for Firebase products that you want to use
-// // https://firebase.google.com/docs/web/setup#available-libraries
+async function add_ada() {
+    const addDoc = Firebase.Firestore.addDoc;
+    const collection = Firebase.Firestore.collection;
+    const db = Firebase.app.db;
 
-// // Your web app's Firebase configuration
-// // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-// const firebaseConfig = {
-//   apiKey: "AIzaSyD3RdPsfO50vjyFKD6wYseNvdaQZFRslZg",
-//   authDomain: "faded-parsons-logging.firebaseapp.com",
-//   projectId: "faded-parsons-logging",
-//   storageBucket: "faded-parsons-logging.appspot.com",
-//   messagingSenderId: "591608062092",
-//   appId: "1:591608062092:web:4b4e4963e6026136119ba9",
-//   measurementId: "G-NCF4CRWMHG"
-// };
-
-// // Initialize Firebase
-// const app = initializeApp(firebaseConfig);
-// const analytics = getAnalytics(app);
+    try {
+        const docRef = await addDoc(collection(db, "users"), {
+            first: "Ada",
+            last: "Lovelace",
+            born: 1815
+        });
+        console.log("Document written with ID: ", docRef.id);
+    } catch (e) {
+        console.error("Error adding document: ", e);
+    }
+}
 
 class ParsonsLogger {
     constructor(widget) {
