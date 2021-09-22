@@ -2,6 +2,8 @@ from argparse import *
 from os.path import *
 from typing import *
 
+from functools import partial
+
 from os import getcwd, listdir, makedirs, PathLike
 
 from lib.consts import Bcolors, PROGRAM_DESCRIPTION
@@ -15,7 +17,7 @@ def file_ext(file_path: PathLike[AnyStr]) -> AnyStr:
     return splitext(basename(file_path))[1]
 
 def write_to(parent_dir: PathLike[AnyStr], file_path: PathLike[AnyStr], data: str):
-    """Opens ./{parent_dir}/{file_path} and writes {data} to it"""
+    """Opens ./`parent_dir`/`file_path` and writes `data` to it"""
     with open(join(parent_dir, file_path), 'w+') as f:
         f.write(data)
 
@@ -27,18 +29,22 @@ def make_if_absent(dir_path: str):
 
 def auto_detect_sources() -> list[PathLike[AnyStr]]:
     Bcolors.warn('** No paths provided, auto-detecting questions directory **')
-    info_json_path = resolve_source_path('infoCourse.json', silent=True)
-    questions_dir = join(dirname(info_json_path), 'questions')
-    
-    if exists(questions_dir):
-        resolve = lambda n: join(questions_dir, n)
-        is_valid = lambda f: isfile(f) and file_ext(f).endswith('py')
-        return list(filter(is_valid, map(resolve, listdir(questions_dir))))
-    
-    Bcolors.fail('** Auto-dection failed. Please provide source paths (--help for more info) **')
-    exit(1)
 
-def resolve_source_path(source_path: str, *, silent: bool = False) -> str:
+    try:
+        questions_dir = resolve_path('questions', path_is_dir=True, silent=True)
+    except FileNotFoundError as e:
+        Bcolors.fail('** Auto-detection failed. Please provide paths to sources. (use --help for more info) **')
+        if e.args:
+            Bcolors.fail(*e.args)
+    
+    resolve = partial(join, questions_dir)
+    is_valid = lambda f: isfile(f) and file_ext(f).endswith('py')
+    return list(filter(is_valid, map(resolve, listdir(questions_dir))))
+
+def resolve_path(path: str, *, 
+        silent: bool = False,
+        path_is_dir: bool = False,
+        ) -> str:
     """ Attempts to find a matching source path in the following destinations:
 
         ```
@@ -55,18 +61,18 @@ def resolve_source_path(source_path: str, *, silent: bool = False) -> str:
         ```
         Will search ./questions/ 4th, in case this is run from <course>/
     """
-    if isdir(source_path) or not file_ext(source_path):
-        source_path += '.py'
+    if not path_is_dir and (isdir(path) or not file_ext(path)):
+        path += '.py'
     
-    if exists(source_path):
-        return source_path
+    if exists(path):
+        return path
 
     def warn():
         if not silent:
             Bcolors.warn('- Could not find', original, 
                 'in current directory. Proceeding with detected file.')
     
-    original = source_path
+    original = path
 
     # if this is in 'elements/pl-faded-parsons', back up to course directory
     h, t0 = split(getcwd())
@@ -89,7 +95,8 @@ def resolve_source_path(source_path: str, *, silent: bool = False) -> str:
         warn()
         return new_path
     
-    raise FileNotFoundError('Could not find file ' + original)
+    raise FileNotFoundError('Could not find ' + 
+        ('directory ' if path_is_dir else 'file ') + original)
 
 
 def parse_args(arg_text: str = None) -> Namespace:

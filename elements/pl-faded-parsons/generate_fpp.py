@@ -6,11 +6,12 @@ from os import path, PathLike
 from re import finditer, match as test
 from shutil import copyfile
 from uuid import uuid4
+from functools import partial
 
 from lib.consts import MAIN_PATTERN, SPECIAL_COMMENT_PATTERN, \
     BLANK_SUBSTITUTE, SETUP_CODE_DEFAULT, TEST_DEFAULT, REGION_IMPORT_PATTERN
 from lib.name_visitor import generate_server, AnnotatedName
-from lib.io_helpers import Bcolors, resolve_source_path, file_name, \
+from lib.io_helpers import Bcolors, resolve_path, file_name, \
     make_if_absent, write_to, file_ext, Namespace, parse_args, auto_detect_sources
 
 def extract_regions(
@@ -68,7 +69,7 @@ def extract_regions(
     RegionToken = namedtuple('RegionToken', ['line', 'id'])
     current_region: RegionToken = None
 
-    format_line = lambda l_n: '({}:{})'.format(source_path or 'line', l_n)
+    format_line = partial('({}:{})'.format, source_path or 'line')
 
     # accumulators
     line_number = 1
@@ -268,7 +269,7 @@ def generate_fpp_question(
     """
     Bcolors.printf(Bcolors.OKBLUE, 'Generating from source', source_path)
     
-    source_path = resolve_source_path(source_path)
+    source_path = resolve_path(source_path)
 
     if log_details:
         print('- Extracting from source...')
