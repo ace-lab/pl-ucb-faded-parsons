@@ -28,7 +28,7 @@ root-course-directory
 |   |   ...                     <<
 |   |
 |   +-- question1               <<
-|   +-- question2               << ...these prairielearn questions
+|   +-- question2               << ...the generated prairielearn questions
 |   |   ...                     <<
 ```
 
@@ -53,7 +53,7 @@ If none is provided, it will hunt for a `questions` directory in these locations
  
 ### Semantic Rules
  - If the file begins with a docstring, it will become the question text
-     - The question text is removed from the answer
+     - The question text is removed from the reference answer
      - Docstrings are always removed from the prompt
  - Text surrounded by `?`s will become blanks in the prompt
      - Blanks cannot span more than a single line
@@ -65,7 +65,7 @@ If none is provided, it will hunt for a `questions` directory in these locations
      - These special forms are the only comments removed from the answer
  - Regions are begun and ended by `## {region name} ##`
      - A maximum of one region may be open at a time
-     - Regions must be closed before the end of the source
+     - Regions must be closed before the end of the file
      - All text in a region is only copied into that region
      - Text will be copied into a new file with the regions name in the
        question directory, excluding these special regions:
@@ -73,13 +73,13 @@ If none is provided, it will hunt for a `questions` directory in these locations
          - implicit: `answer_code` `prompt_code` `question_text`
      - Code in `setup_code` will be parsed to extract exposed names unless the --no-parse
        flag is set. 
-         - Type annotations and function docstrings are used to fill out server.py and the Provided section of the prompt text
+         - Type annotations and function docstrings are used to fill out `server.py` and the Provided section of the prompt text
      - Any custom region that clashes with an automatically generated file name
        will overwrite the automatically generated code
+     - Reopening a region will append to its existing contents
  - Import regions allow for the contents of arbitrary files to be loaded as regions
-     - They are formatted as `## import {rel_file_path} as {region name} ##`
-        where `rel_file_path` is the relative path to the file from the source file
-     - Like regular regions, they cannot be used inside of another region
+     - They are formatted as `## import {rel_file_path} as {region name} ##` where `rel_file_path` is the relative path to the file from the source file
+     - With the exception of not needing to close an import region, they operate identically to regular regions
 
 ## A Simple Example
 
@@ -121,7 +121,7 @@ def is_sublist(lst, sublist): #0given
 ```
 This will create a reference solution and sortable code lines in a `<pl-faded-parsons>` element (with blanks where the `?text?` are).
 
-Note that the full line comments as well as the `# return early!` comments will be included in the reference solution, but not the sortable code lines.
+Note that the full-line comments as well as the `# return early!` comment will be included in the reference solution, but not the sortable code lines.
 
 By contrast, the special-form comments (eg `#0given` and `#blank _:_`) will not appear in the reference solution, but will edit the starting configuration of the sortable code lines.
 (`#0given` includes `def is_sublist(lst, sublist):` as a part of the starting solution with 0 indents, `#1given` includes `return False` with 1 indent, and `#blank _:_` sets the inital text of the blank in the brackets to `_:_`. )
@@ -298,7 +298,7 @@ The directory name will be set by the name of the file used to generate the ques
 
 ### The `info.json` File
 
-The `info.json` file will only be generated if a matching file doesn't exist, or if the `--force-json file_path` is set. 
+The `info.json` file will only be generated if a matching file doesn't exist, or if `--force-json file_path` is passed. 
 This is so that a new uuid will not be generated each time the file is run.
 
 ### The `server.py` file
