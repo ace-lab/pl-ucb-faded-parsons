@@ -81,7 +81,7 @@ If none is provided, it will hunt for a `questions` directory in these locations
         where `rel_file_path` is the relative path to the file from the source file
      - Like regular regions, they cannot be used inside of another region
 
-### An Example Source File
+## A Simple Example Source File
 
 Before running the tool, the questions directory takes the form
 ```
@@ -98,7 +98,8 @@ At the header of `sublist.py` we have a docstring which will become the prompt.
     >> is_sublist(['a', 'b', 'c', 'd'], ['b', 'c'])
     True
     >> is_sublist([1, 2, 3, 4], [4, 3])
-    False</pl-code>
+    False
+    </pl-code>
 """
 ...
 ```
@@ -118,13 +119,14 @@ def is_sublist(lst, sublist): #0given
     return False #1given
 ...
 ```
+This will create a reference solution and sortable code lines in a `<pl-faded-parsons>` element (with blanks where the `?text?` are).
 
 Note that the full line comments as well as the `# return early!` comments will be included in the reference solution, but not the sortable code lines.
 
 By contrast, the special-form comments (eg `#0given` and `#blank _:_`) will not appear in the reference solution, but will edit the starting configuration of the sortable code lines.
 (`#0given` includes `def is_sublist(lst, sublist):` as a part of the starting solution with 0 indents, `#1given` includes `return False` with 1 indent, and `#blank _:_` sets the inital text of the blank in the brackets to `_:_`. )
 
-Note there is no way to indicate a red-herring or distractor line! 
+There is no way to indicate a red-herring or distractor line! 
 Distractors are philosophically  antithetical to the design of FPPs!
 
 Continuing to the `test` region, the file concludes:
@@ -172,6 +174,8 @@ If the `## test ##` does not **start and end** before the end of the file or the
 
 [The proper way to write test methods is in prairielearn's developer guide.](https://prairielearn.readthedocs.io/en/latest/python-grader/#teststestpy)
 
+### Example Test Takeaways
+
 At a glance:
  - Performance is evaluated and transmitted through the class `Feedback`.
  - Test functions must...
@@ -186,3 +190,115 @@ Common Gotchas:
  **Entering the number of points recieved will not work!**
  - Test helper functions (ie `score_cases` in the example above) **cannot** be methods (static or instance) on the Test class. 
  They must be defined in a different scope.
+
+
+## A Complex Example Source File
+
+Before the tool runs, the questions directory looks like this:
+```
+questions
+|   square_color.py
+|   square_question.html
+```
+
+Instead of writing a docstring, you may choose to write a file (eg for syntax-highlighting/checking) and use an import region like so:
+``` html
+<!-- square_question.html -->
+Make a function <code>square_color</code> that tells if a chess 
+square is black based off of its position (see the labeled board below).
+<br>
+<img src="https://www.dummies.com/wp-content/uploads/201843.image0.jpg" 
+    alt="chessboard" 
+    style="margin-left:auto; margin-right:auto; display:block; width:50;"
+>
+<br>
+
+<h3> Background </h3>
+
+In this activity we will be using modulo (%)! It is often spoken about as
+the remainder, the complement to integer division. We often use it to find if something 
+is even or odd, by inspecting if <code>x % 2 == 0</code> for even and 
+<code>x % 2 == 1</code> for odd.
+
+Another way to think of it is to convert <i>linear</i> change into 
+<i>cyclic</i> change. Consider how it acts on this linearly increasing list:
+
+<pl-code language="python">
+nums = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+print([x % 3 for x in nums])
+>> [0, 1, 2, 0, 1, 2, 0, 1, 2]
+</pl-code>
+
+It turns 0..8 into (0, 1 , 2) repeating!
+```
+Then in `square_color.py`:
+``` python
+## import square_question.html as question_text ##
+...
+```
+
+Then we want to provide a helper function, so continuing we have:
+
+``` python
+...
+## setup_code ##
+def to_coordinates(pos: str) -> tuple[int, int]:
+    """ Takes a file-and-rank string and turns it into an (int, int),
+        eg 'a1' -> (0, 0), 'd6' -> (3, 5)
+    """
+    f_ord, r_ord = tuple(map(ord, pos[:2]))
+    return f_ord - ord('a'), r_ord - ord('1')
+## setup_code ##
+...
+```
+The `setup_code` region is required to determine that this is not code to be given to the student. 
+They will have no visibility of this code, but its name will be availiable to them.
+
+This code will be parsed and the type information and documentation extracted.
+They will be used as help text in prairielearn and displayed in the prompt.
+
+The rest of the file proceeds in the usual way:
+
+``` python
+...
+def square_color(pos): #0given
+    file, rank = to_coordinates(pos)
+    black_first_square = file % ?2? == 0
+    same_as_first = rank % ?2? == 0
+    return black_first_square == same_as_first
+
+# tests down here ...
+```
+
+Note that is possible to direct imports at previously generated files to prevent changes to things like server files, eg for this file
+
+``` python
+## import square_color/server.py as server.py ##
+## import square_color/tests/test.py as test ##
+```
+
+See the regions section for special names like `test` and `question_text`. All names that aren't special simply write to a file of the same name, so
+
+``` python
+## res/data.txt ##
+3.14159
+## res/data.txt ##
+```
+
+will write the single line `3.14159` to `question_name/res/data.txt`.
+
+## Generated Files
+
+### The Question Directory
+
+The directory name will be set by the name of the file used to generate the question.
+
+### The `info.json` File
+
+The `info.json` file will only be generated if a matching file doesn't exist, or if the `--force-json file_path` is set. 
+This is so that a new uuid will not be generated each time the file is run.
+
+### The `server.py` file
+
+The server file specifies which names pass into the student's scope, and which names must pass out of their scope. 
+The 
