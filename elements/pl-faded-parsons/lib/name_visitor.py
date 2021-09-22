@@ -24,7 +24,6 @@ class GlobalNameVisitor(NodeVisitor):
     def __init__(self) -> None:
         super().__init__()
         self.names: dict[str, str] = dict()
-        self.annotation = None
 
     def visit_Assign(self, node: Assign) -> Any:
         for t in node.targets:
