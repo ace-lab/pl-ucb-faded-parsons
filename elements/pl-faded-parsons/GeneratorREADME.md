@@ -81,7 +81,7 @@ If none is provided, it will hunt for a `questions` directory in these locations
         where `rel_file_path` is the relative path to the file from the source file
      - Like regular regions, they cannot be used inside of another region
 
-## A Simple Example Source File
+## A Simple Example
 
 Before running the tool, the questions directory takes the form
 ```
@@ -192,7 +192,7 @@ Common Gotchas:
  They must be defined in a different scope.
 
 
-## A Complex Example Source File
+## A Complex Example
 
 Before the tool runs, the questions directory looks like this:
 ```
@@ -270,11 +270,14 @@ def square_color(pos): #0given
 # tests down here ...
 ```
 
-Note that is possible to direct imports at previously generated files to prevent changes to things like server files, eg for this file
+### Advanced Import Regions
+
+Note that is possible to direct imports at previously generated files to prevent the tool from overwritting data, eg
 
 ``` python
-## import square_color/server.py as server.py ##
-## import square_color/tests/test.py as test ##
+## import question_name/server.py as server.py ##
+## import question_name/tests/test.py as test ##
+## import question_name/info.json as info.json ##
 ```
 
 See the regions section for special names like `test` and `question_text`. All names that aren't special simply write to a file of the same name, so
@@ -301,4 +304,14 @@ This is so that a new uuid will not be generated each time the file is run.
 ### The `server.py` file
 
 The server file specifies which names pass into the student's scope, and which names must pass out of their scope. 
-The 
+The code in the `setup_code` and `prompt_code` regions will be parsed to derive which names enter and exit this scope, and what types they carry.
+
+Parsing of this code can be disabled for an entire batch by the flag `--no-parse`, but it will overwrite any existing `server.py` with the default.
+(See the complex example's advanced import regions on how to avoid overwritting.)
+
+### The `tests` Directory
+
+This is filled with the answer, setup code, and test code.
+This is where the python autograder automatically looks for the files named `ans.py`, `setup_code.py`, and `test.py`.
+
+These are the files that get generated from their respsective special name regions.
