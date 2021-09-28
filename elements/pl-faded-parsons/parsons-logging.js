@@ -20,10 +20,18 @@ class ParsonsLogger {
         this.widget = widget;
         this.events = [];
         this.last_field_update = null;
+        
+        const e = { type: 'init', lines: [] };
+        for (const line of widget.modified_lines) {
+            e.lines.push({ id: line.id, code: line.code, indent: line.indent })
+        }
+
+        this.logEvent(e);
     }
     logEvent(e) {
         e['widgetId'] = this.widget.options.sortableId;
         e['time'] = e['time'] || Date.now();
+        console.log(e);
         this.events.push(e);
     }
     onSubmit() {
@@ -33,7 +41,19 @@ class ParsonsLogger {
         this.logEvent(e);
     }
     onSortableUpdate(event, ui) {
-        console.log(event);
+        if (event.type === 'indentChange') {
+            this.logEvent(event);
+            return;
+        }
+        const lineId = ui.item[0].id;
+        const solLines = [];
+        for (const child of event.target.children) {
+            const lineId = child.id
+            const modLine = this.widget.getLineById(lineId);
+            const indent = modLine && modLine.indent;
+            solLines.push({ id: lineId, indent: indent});
+        }
+        this.logEvent({ type: event.type, targetId: lineId, solutionLines: solLines });
     }
     finishTypingEvent() {
         if (!this.last_field_update)

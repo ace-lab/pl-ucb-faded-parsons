@@ -2,6 +2,7 @@
 
 var ParsonsGlobal = {
   logger: null,
+  widget: null,
   /*
    * When form is submitted, capture the state of the student's solution.
    * For now we only submit the actual code, NOT the original metadata of where the blanks were etc.
@@ -52,7 +53,9 @@ var ParsonsGlobal = {
       'max_wrong_lines': 1,
       'syntax_language': 'lang-py' // lang-rb and other choices also acceptable
     });
-    ParsonsGlobal.widget.init($('#code-lines').val());
+    const codeLinesValue = $('#code-lines').val();
+    // console.log(codeLinesValue);
+    ParsonsGlobal.widget.init(codeLinesValue);
     ParsonsGlobal.widget.alphabetize();  // this should depend on attribute settings
     // when blanks are filled, adjust their width
     $('input.text-box').on('input', ParsonsGlobal.adjustBlankWidth);
