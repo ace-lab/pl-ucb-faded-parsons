@@ -51,7 +51,7 @@ class ParsonsLogger {
         const lineId = ui.item[0].id;
         const solLines = [];
         for (const child of event.target.children) {
-            const lineId = child.id
+            const lineId = child.id;
             const modLine = this.widget.getLineById(lineId);
             const indent = modLine && modLine.indent;
             solLines.push({ id: lineId, indent: indent});
@@ -118,9 +118,7 @@ class ParsonsLogger {
     }
     async sendLog() {
         try {
-            const addDoc = Firebase.Firestore.addDoc;
-            const collection = Firebase.Firestore.collection;
-            const FieldValue = Firebase.Firestore.FieldValue;
+            const Fr = Firebase.Firestore;
             const db = Firebase.app.db;
 
             const solutionCode = this.widget.solutionCode().map(t => t.replaceAll('\n', ';'));
@@ -128,12 +126,12 @@ class ParsonsLogger {
             let docId = window.localStorage.getItem('docId');
 
             if (docId) {
-                await collection(db, "logs").doc(docId).update({
-                    log: FieldValue.arrayUnion(...this.events),
+                await Fr.updateDoc(Fr.doc(db, "logs", docId), {
+                    log: Fr.arrayUnion(...this.events),
                     solutionCode: solutionCode,
                  });
             } else {
-                const docRef = await addDoc(collection(db, "logs"), {
+                const docRef = await Fr.addDoc(Fr.collection(db, "logs"), {
                     docTitle: document.title,
                     problemHash: this.problemHash,
                     solutionCode: solutionCode,
