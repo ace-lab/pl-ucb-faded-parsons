@@ -1,27 +1,32 @@
-async function add_ada() {
-    const addDoc = Firebase.Firestore.addDoc;
-    const collection = Firebase.Firestore.collection;
-    const db = Firebase.app.db;
-
-    try {
-        const docRef = await addDoc(collection(db, "users"), {
-            first: "Ada",
-            last: "Lovelace",
-            born: 1815
-        });
-        console.log("Document written with ID: ", docRef.id);
-    } catch (e) {
-        console.error("Error adding document: ", e);
+// https://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
+String.prototype.hashCode = function() {
+    let hash = 0;
+    if (this.length === 0) return hash;
+    for (let i = 0; i < this.length; i++) {
+      const chr = this.charCodeAt(i);
+      hash = ((hash << 5) - hash) + chr;
+      hash |= 0;
     }
-}
+    return hash;
+};
 
 class ParsonsLogger {
     constructor(widget) {
         this.widget = widget;
         this.events = [];
         this.last_field_update = null;
+
+        this.problemHash = document.title.hashCode();
+
+        const prevHash = window.localStorage.getItem('problemHash');
+        const resuming = prevHash === ("" + this.problemHash);
         
-        const e = { type: 'init', lines: [] };
+        if (!prevHash) {
+            window.localStorage.setItem('problemHash', this.problemHash);
+            window.localStorage.removeItem('docId'); // need a new doc
+        }
+        
+        const e = { type: resuming ? 'resume' : 'init', lines: [] };
         for (const line of widget.modified_lines) {
             e.lines.push({ id: line.id, code: line.code, indent: line.indent })
         }
@@ -31,17 +36,15 @@ class ParsonsLogger {
     logEvent(e) {
         e['widgetId'] = this.widget.options.sortableId;
         e['time'] = e['time'] || Date.now();
-        console.log(e);
+        // console.log(e);
         this.events.push(e);
     }
     onSubmit() {
-        const e = { type: 'submit' };
-
-        console.log('submit event', e);
-        this.logEvent(e);
+        this.logEvent({ type: 'submit' });
+        this.sendLog();
     }
     onSortableUpdate(event, ui) {
-        if (event.type === 'indentChange') {
+        if (event.type === 'reindent') {
             this.logEvent(event);
             return;
         }
@@ -56,8 +59,7 @@ class ParsonsLogger {
         this.logEvent({ type: event.type, targetId: lineId, solutionLines: solLines });
     }
     finishTypingEvent() {
-        if (!this.last_field_update)
-            return;
+        if (!this.last_field_update) return;
 
         clearTimeout(this.last_field_update.timeout);
 
@@ -69,7 +71,6 @@ class ParsonsLogger {
             codelineValue: this.last_field_update.value,
         };
 
-        console.log('typing event', e);
         this.logEvent(e);
 
         this.last_field_update = null;
@@ -88,7 +89,6 @@ class ParsonsLogger {
                     codelineValue: codeline.value,
                 };
 
-                console.log('paste event', e);
                 this.logEvent(e);
                 break;
             case 'deleteByDrag':
@@ -114,6 +114,40 @@ class ParsonsLogger {
                     value: codeline.value,
                     timeout: setTimeout(() => this.finishTypingEvent(), 1000),
                 };
+        }
+    }
+    async sendLog() {
+        try {
+            const addDoc = Firebase.Firestore.addDoc;
+            const collection = Firebase.Firestore.collection;
+            const FieldValue = Firebase.Firestore.FieldValue;
+            const db = Firebase.app.db;
+
+            const solutionCode = this.widget.solutionCode().map(t => t.replaceAll('\n', ';'));
+            
+            let docId = window.localStorage.getItem('docId');
+
+            if (docId) {
+                await collection(db, "logs").doc(docId).update({
+                    log: FieldValue.arrayUnion(...this.events),
+                    solutionCode: solutionCode,
+                 });
+            } else {
+                const docRef = await addDoc(collection(db, "logs"), {
+                    docTitle: document.title,
+                    problemHash: this.problemHash,
+                    solutionCode: solutionCode,
+                    log: this.events,
+                    sent: Date.now(),
+                });
+
+                docId = docRef.id;
+                window.localStorage.setItem('docId', docId);
+            }
+            
+            console.log("Document written with ID: ", docId);
+        } catch (e) {
+            console.error("Error adding document: ", e);
         }
     }
 }

@@ -451,7 +451,7 @@ class ParsonsWidget {
     if (code_line.indent !== new_indent) {
       this.options.onSortableUpdate(
         {
-          type: "indentChange",
+          type: "reindent",
           id: id,
           old: code_line.indent,
           new: new_indent,
