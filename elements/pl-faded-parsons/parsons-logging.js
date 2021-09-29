@@ -1,10 +1,8 @@
 // https://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
-String.prototype.hashCode = function() {
+function hash(s) {
     let hash = 0;
-    if (this.length === 0) return hash;
-    for (let i = 0; i < this.length; i++) {
-      const chr = this.charCodeAt(i);
-      hash = ((hash << 5) - hash) + chr;
+    for (let i = 0; i < s.length; i++) {
+      hash = ((hash << 5) - hash) + s.charCodeAt(i);
       hash |= 0;
     }
     return hash;
@@ -16,33 +14,37 @@ class ParsonsLogger {
         this.events = [];
         this.last_field_update = null;
 
-        this.problemHash = document.title.hashCode();
+        this.problemHash = hash(document.title);
 
         const prevHash = window.localStorage.getItem('problemHash');
-        const resuming = prevHash === ("" + this.problemHash);
+        const resuming = prevHash && prevHash === ("" + this.problemHash);
         
-        if (!prevHash) {
-            window.localStorage.setItem('problemHash', this.problemHash);
+        window.localStorage.setItem('problemHash', this.problemHash);
+
+        if (!resuming) {
             window.localStorage.removeItem('docId'); // need a new doc
         }
         
-        const e = { type: resuming ? 'resume' : 'init', lines: [] };
+        const e = { type: resuming ? 'resume' : 'init', problemHash: this.problemHash, lines: [] };
         for (const line of widget.modified_lines) {
             e.lines.push({ id: line.id, code: line.code, indent: line.indent })
         }
 
         this.logEvent(e);
     }
+
     logEvent(e) {
         e['widgetId'] = this.widget.options.sortableId;
         e['time'] = e['time'] || Date.now();
         // console.log(e);
         this.events.push(e);
     }
+    
     onSubmit() {
         this.logEvent({ type: 'submit' });
         this.sendLog();
     }
+    
     onSortableUpdate(event, ui) {
         if (event.type === 'reindent') {
             this.logEvent(event);
@@ -58,6 +60,7 @@ class ParsonsLogger {
         }
         this.logEvent({ type: event.type, targetId: lineId, solutionLines: solLines });
     }
+    
     finishTypingEvent() {
         if (!this.last_field_update) return;
 
@@ -75,6 +78,7 @@ class ParsonsLogger {
 
         this.last_field_update = null;
     }
+    
     onBlankUpdate(event, codeline) {
         switch (event.inputType) {
             case 'insertFromPaste':
@@ -116,6 +120,7 @@ class ParsonsLogger {
                 };
         }
     }
+    
     async sendLog() {
         try {
             const Fr = Firebase.Firestore;
