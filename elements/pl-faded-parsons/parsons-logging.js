@@ -11,43 +11,36 @@ function hash(s) {
 class ParsonsLogger {
     constructor(widget) {
         this.widget = widget;
-        this.events = [];
-        this.last_field_update = null;
+        this._events = [];
+        this._last_typing_event = null;
 
-        this.problemHash = hash(document.title);
+        this._problemHash = hash(document.title);
 
         const prevHash = window.localStorage.getItem('problemHash');
-        const resuming = prevHash && prevHash === ("" + this.problemHash);
+        const resuming = prevHash && prevHash === ("" + this._problemHash);
         
-        window.localStorage.setItem('problemHash', this.problemHash);
+        window.localStorage.setItem('problemHash', this._problemHash);
 
         if (!resuming) {
             window.localStorage.removeItem('docId'); // need a new doc
         }
         
-        const e = { type: resuming ? 'resume' : 'init', problemHash: this.problemHash, lines: [] };
+        const e = { type: resuming ? 'resume' : 'init', problemHash: this._problemHash, lines: [] };
         for (const line of widget.modified_lines) {
             e.lines.push({ id: line.id, code: line.code, indent: line.indent })
         }
 
-        this.logEvent(e);
-    }
-
-    logEvent(e) {
-        e['widgetId'] = this.widget.options.sortableId;
-        e['time'] = e['time'] || Date.now();
-        // console.log(e);
-        this.events.push(e);
+        this._logEvent(e);
     }
     
     onSubmit() {
-        this.logEvent({ type: 'submit' });
-        this.sendLog();
+        this._logEvent({ type: 'submit' });
+        this._commit();
     }
     
     onSortableUpdate(event, ui) {
         if (event.type === 'reindent') {
-            this.logEvent(event);
+            this._logEvent(event);
             return;
         }
         const lineId = ui.item[0].id;
@@ -58,25 +51,7 @@ class ParsonsLogger {
             const indent = modLine && modLine.indent;
             solLines.push({ id: lineId, indent: indent});
         }
-        this.logEvent({ type: event.type, targetId: lineId, solutionLines: solLines });
-    }
-    
-    finishTypingEvent() {
-        if (!this.last_field_update) return;
-
-        clearTimeout(this.last_field_update.timeout);
-
-        const e = {
-            type: 'typed',
-            time: this.last_field_update.start,
-            duration: Date.now() - this.last_field_update.start,
-            codelineName: this.last_field_update.codelineName,
-            codelineValue: this.last_field_update.value,
-        };
-
-        this.logEvent(e);
-
-        this.last_field_update = null;
+        this._logEvent({ type: event.type, targetId: lineId, solutionLines: solLines });
     }
     
     onBlankUpdate(event, codeline) {
@@ -84,7 +59,7 @@ class ParsonsLogger {
             case 'insertFromPaste':
             case 'insertFromPasteAsQuotation':
             case 'insertFromDrop':
-                this.finishTypingEvent();
+                this._finishTypingEvent();
 
                 const e = {
                     type: 'paste',
@@ -93,35 +68,61 @@ class ParsonsLogger {
                     codelineValue: codeline.value,
                 };
 
-                this.logEvent(e);
+                this._logEvent(e);
                 break;
             case 'deleteByDrag':
             case 'deleteByCut':
             // do something special?
             // right now just continues to default...
             default: // generic typing event
-                if (this.last_field_update) {
+                if (this._last_typing_event) {
                     // if the last update was to a different field, finish the previous event
                     // otherwise clear the timeout
-                    if (this.last_field_update.codelineName !== codeline.name) {
-                        this.finishTypingEvent();
+                    if (this._last_typing_event.codelineName !== codeline.name) {
+                        this._finishTypingEvent();
                     } else {
-                        clearTimeout(this.last_field_update.timeout);
+                        clearTimeout(this._last_typing_event.timeout);
                     }
                 }
 
-                this.last_field_update = {
+                this._last_typing_event = {
                     codelineName: codeline.name,
                     e: event,
-                    start: this.last_field_update ?
-                        this.last_field_update.start : Date.now(),
+                    start: this._last_typing_event ?
+                        this._last_typing_event.start : Date.now(),
                     value: codeline.value,
-                    timeout: setTimeout(() => this.finishTypingEvent(), 1000),
+                    timeout: setTimeout(() => this._finishTypingEvent(), 1000),
                 };
         }
     }
+
+    _logEvent(e) {
+        this._finishTypingEvent();
+
+        e['widgetId'] = this.widget.options.sortableId;
+        e['time'] = e['time'] || Date.now();
+        this._events.push(e);
+    }
     
-    async sendLog() {
+    _finishTypingEvent() {
+        if (!this._last_typing_event) return;
+
+        clearTimeout(this._last_typing_event.timeout);
+
+        const e = {
+            type: 'typed',
+            time: this._last_typing_event.start,
+            duration: Date.now() - this._last_typing_event.start,
+            codelineName: this._last_typing_event.codelineName,
+            codelineValue: this._last_typing_event.value,
+        };
+
+        this._last_typing_event = null;
+
+        this._logEvent(e);
+    }
+    
+    async _commit() {
         try {
             const Fr = Firebase.Firestore;
             const db = Firebase.app.db;
@@ -132,15 +133,15 @@ class ParsonsLogger {
 
             if (docId) {
                 await Fr.updateDoc(Fr.doc(db, "logs", docId), {
-                    log: Fr.arrayUnion(...this.events),
+                    log: Fr.arrayUnion(...this._events),
                     solutionCode: solutionCode,
                  });
             } else {
                 const docRef = await Fr.addDoc(Fr.collection(db, "logs"), {
                     docTitle: document.title,
-                    problemHash: this.problemHash,
+                    problemHash: this._problemHash,
                     solutionCode: solutionCode,
-                    log: this.events,
+                    log: this._events,
                     sent: Date.now(),
                 });
 
