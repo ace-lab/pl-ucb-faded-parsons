@@ -14,18 +14,27 @@ class ParsonsLogger {
         this._events = [];
         this._last_typing_event = null;
 
+        this._userHash = hash($('#username-nav')[0].innerText);
         this._problemHash = hash(document.title);
 
-        const prevHash = window.localStorage.getItem('problemHash');
-        const resuming = prevHash && prevHash === ("" + this._problemHash);
+        this._sessionHash = this._userHash ^ this._problemHash;
+
+        const prevHash = window.localStorage.getItem('sessionHash');
+        const resuming = prevHash && prevHash === ("" + this._sessionHash);
         
-        window.localStorage.setItem('problemHash', this._problemHash);
+        window.localStorage.setItem('sessionHash', this._sessionHash);
 
         if (!resuming) {
             window.localStorage.removeItem('docId'); // need a new doc
         }
         
-        const e = { type: resuming ? 'resume' : 'init', problemHash: this._problemHash, lines: [] };
+        const e = { 
+            type: resuming ? 'resume' : 'init', 
+            problemHash: this._problemHash, 
+            userHash: this._userHash,
+            lines: [] 
+        };
+
         for (const line of widget.modified_lines) {
             e.lines.push({ id: line.id, code: line.code, indent: line.indent })
         }
@@ -140,6 +149,7 @@ class ParsonsLogger {
                 const docRef = await Fr.addDoc(Fr.collection(db, "logs"), {
                     docTitle: document.title,
                     problemHash: this._problemHash,
+                    userHash: this_userHash,
                     solutionCode: solutionCode,
                     log: this._events,
                     sent: Date.now(),
