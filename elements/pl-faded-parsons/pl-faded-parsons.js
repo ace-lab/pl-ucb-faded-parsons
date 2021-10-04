@@ -62,7 +62,7 @@ var ParsonsGlobal = {
     // when form submitted, grab the student work and put it into hidden form fields
     $('form.question-form').submit(ParsonsGlobal.submitHandler);
 
-    if ((typeof ParsonsLogger !== 'undefined') && !ParsonsGlobal.logger) {
+    if (false && (typeof ParsonsLogger !== 'undefined') && !ParsonsGlobal.logger) {
       ParsonsGlobal.logger = new ParsonsLogger(ParsonsGlobal.widget);
     }
   }

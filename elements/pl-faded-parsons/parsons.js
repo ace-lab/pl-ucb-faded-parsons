@@ -16,17 +16,13 @@ class LineBasedGrader {
       parson.model_solution.length
     );
     const errors = [],
-      log_errors = [];
-    const incorrectLines = [],
-      studentCodeLineObjects = [];
+      log_errors = [],
+      incorrectLines = [];
     let wrong_order = false;
 
-    // Find the line objects for the student's code
-    for (let i = 0; i < student_code.length; i++) {
-      studentCodeLineObjects.push(
-        $.extend(true, {}, parson.getLineById(student_code[i].id))
-      );
-    }
+    const studentCodeLineObjects = student_code.map((line) =>
+      $.extend(true, {}, parson.getLineById(line.id))
+    );
 
     // This maps codeline strings to the index, at which starting from 0, we have last
     // found this codeline. This is used to find the best indices for each
@@ -351,7 +347,7 @@ class ParsonsWidget {
 
     // a solution to the problem that after refreshing codelines
     // will remember their indent in the view, but not in model
-    $('#ul-parsons-solution').ready(() => {
+    $("#ul-parsons-solution").ready(() => {
       for (const line of this.modified_lines) {
         const elem = line.elem();
         if (elem) {
@@ -367,9 +363,8 @@ class ParsonsWidget {
   getHash(searchString) {
     const hash = [],
       ids = $(searchString).sortable("toArray");
-    let line;
-    for (let i = 0; i < ids.length; i++) {
-      line = this.getLineById(ids[i]);
+    for (const id of ids) {
+      const line = this.getLineById(id);
       hash.push(line.orig + "_" + line.indent);
     }
     //prefix with something to handle empty output situations
@@ -391,16 +386,16 @@ class ParsonsWidget {
     const lines = this.normalizeIndents(
       this.getModifiedCode("#ul-" + this.options.sortableId)
     );
-    for (let i = 0; i < lines.length; i++) {
+    for (const line of lines) {
       let blankText = "";
       //Original line from the YAML File
       let originalLine = "";
-      const yamlConfigClone = $("#" + lines[i].id).clone();
+      const yamlConfigClone = $("#" + line.id).clone();
       yamlConfigClone.find("input").each(function (_, inp) {
         inp.replaceWith("!BLANK");
         blankText += " #blank" + inp.value;
       });
-      const codeClone = $("#" + lines[i].id).clone();
+      const codeClone = $("#" + line.id).clone();
       codeClone.find("input").each(function (_, inp) {
         inp.replaceWith(inp.value);
       });
@@ -410,13 +405,13 @@ class ParsonsWidget {
         originalLine = " #!ORIGINAL" + yamlConfigClone[0].innerText + blankText;
       }
       solutionCode +=
-        "  ".repeat(lines[i].indent) + codeClone[0].innerText + "\n";
+        "  ".repeat(line.indent) + codeClone[0].innerText + "\n";
       codeMetadata += originalLine + "\n";
     }
     return [solutionCode, codeMetadata];
   }
   addLogEntry(entry) {
-    let state, previousState;
+    let previousState;
     const logData = {
       time: new Date(),
       output: this.solutionHash(),
@@ -431,7 +426,7 @@ class ParsonsWidget {
       entry.target = entry.target.replace(this.id_prefix, "");
     }
 
-    state = logData.output;
+    const state = logData.output;
 
     jQuery.extend(logData, entry);
     this.user_actions.push(logData);
@@ -480,14 +475,12 @@ class ParsonsWidget {
   // Get a line object by the full id including id prefix
   // (see parseCode for description of line objects)
   getLineById(id) {
-    let index = -1;
-    for (let i = 0; i < this.modified_lines.length; i++) {
-      if (this.modified_lines[i].id == id) {
-        index = i;
-        break;
+    for (const line of this.modified_lines) {
+      if (line.id == id) {
+        return line;
       }
     }
-    return this.modified_lines[index];
+    return this.modified_lines[-1];
   }
   // Check and normalize code indentation.
   // Does not use the current object (this) ro make changes to
@@ -511,9 +504,8 @@ class ParsonsWidget {
     //ids of the the modified code
     const lines_to_return = [],
       solution_ids = $(search_string).sortable("toArray");
-    let item;
-    for (let i = 0; i < solution_ids.length; i++) {
-      item = this.getLineById(solution_ids[i]);
+    for (const id of solution_ids) {
+      const item = this.getLineById(id);
       lines_to_return.push($.extend(new ParsonsCodeline(), item));
     }
     return lines_to_return;
@@ -877,7 +869,7 @@ class ParsonsWidget {
   }
 }
 
-ParsonsWidget._graders = { "LineBasedGrader": LineBasedGrader };
+ParsonsWidget._graders = { LineBasedGrader: LineBasedGrader };
 ParsonsWidget.blankRegexp = /#blank([^#]*)/;
 
 ParsonsWidget.userStrings = {
