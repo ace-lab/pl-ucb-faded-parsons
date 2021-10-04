@@ -349,6 +349,21 @@ class ParsonsWidget {
       item.id = id_prefix + index;
       // item.indent = 0;
     });
+
+    // a solution to the problem that after refreshing codelines
+    // will remember their indent in the view, but not in model
+    $('#ul-parsons-solution').ready(() => {
+      for (const line of this.modified_lines) {
+        const elem = line.elem();
+        if (elem) {
+          // auto-ignores 'px' suffix bc parseInt is stupid
+          const leftMargin = parseInt(elem.css("margin-left"), 10);
+          if (!isNaN(leftMargin)) {
+            line.indent = Math.floor(leftMargin / this.options.x_indent);
+          }
+        }
+      }
+    });
   }
   getHash(searchString) {
     var hash = [],
