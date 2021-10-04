@@ -149,7 +149,7 @@ class ParsonsLogger {
                 const docRef = await Fr.addDoc(Fr.collection(db, "logs"), {
                     docTitle: document.title,
                     problemHash: this._problemHash,
-                    userHash: this_userHash,
+                    userHash: this._userHash,
                     solutionCode: solutionCode,
                     log: this._events,
                     sent: Date.now(),
@@ -161,7 +161,7 @@ class ParsonsLogger {
             
             console.log("Document written with ID: ", docId);
         } catch (e) {
-            console.error("Error adding document: ", e);
+            alert("Error adding document:\n" + e.toString());
         }
     }
 }
