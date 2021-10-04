@@ -361,12 +361,11 @@ class ParsonsWidget {
     }, 100);
   }
   getHash(searchString) {
-    const hash = [],
-      ids = $(searchString).sortable("toArray");
-    for (const id of ids) {
+    const ids = $(searchString).sortable("toArray");
+    const hash = ids.map(id => {
       const line = this.getLineById(id);
-      hash.push(line.orig + "_" + line.indent);
-    }
+      return line.orig + "_" + line.indent;
+    });
     //prefix with something to handle empty output situations
     if (hash.length === 0) {
       return "-";
@@ -502,44 +501,27 @@ class ParsonsWidget {
    * */
   getModifiedCode(search_string) {
     //ids of the the modified code
-    const lines_to_return = [],
-      solution_ids = $(search_string).sortable("toArray");
-    for (const id of solution_ids) {
+    const solution_ids = $(search_string).sortable("toArray");
+    return solution_ids.map(id => {
       const item = this.getLineById(id);
-      lines_to_return.push($.extend(new ParsonsCodeline(), item));
-    }
-    return lines_to_return;
+      return $.extend(new ParsonsCodeline(), item);
+    });
   }
   hashToIDList(hash) {
-    let lineValues;
-    let h;
-
-    if (hash === "-" || hash === "" || hash === null) {
-      h = [];
-    } else {
-      h = hash.split("-");
-    }
-
-    const ids = [];
-    for (const item of h) {
-      lineValues = item.split("_");
-      ids.push(this.modified_lines[lineValues[0]].id);
-    }
-    return ids;
+    if (hash === "-" || hash === "" || hash === null) return [];
+    return hash.split("-").map(item => {
+      const lineValues = item.split("_");
+      return this.modified_lines[lineValues[0]].id;
+    });
   }
   updateIndentsFromHash(hash) {
-    let lineValues;
+    if (hash === "-" || hash === "" || hash === null) return;
 
-    const h = (hash === "-" || hash === "" || hash === null) ? 
-      [] : hash.split("-");
-
-    const ids = [];
-    for (const item of h) {
-      lineValues = item.split("_");
+    for (const item of hash.split("-")) {
+      const lineValues = item.split("_");
       this.modified_lines[lineValues[0]].indent = Number(lineValues[1]);
       this.updateHTMLIndent(this.modified_lines[lineValues[0]].id);
     }
-    return ids;
   }
   /**
    * TODO(petri) refoctor to UI
@@ -616,10 +598,7 @@ class ParsonsWidget {
         ? this.options.permutation
         : this.getRandomPermutation
     )(this.modified_lines.length);
-    const idlist = [];
-    for (const n of permutation) {
-      idlist.push(this.modified_lines[n].id);
-    }
+    const idlist = permutation.map(n => this.modified_lines[n].id);
     if (this.options.trashId) {
       this.createHTMLFromLists([], idlist);
     } else {
@@ -651,12 +630,9 @@ class ParsonsWidget {
     }
     const codeLines = this.modified_lines.slice();
     codeLines.sort(compare);
-    const idlist = [];
-    for (const line of codeLines) {
-      if (this.given.slice().indexOf(line) < 0) {
-        idlist.push(line.id);
-      }
-    }
+    const idlist = codeLines
+      .filter(line => this.given.slice().indexOf(line) < 0)
+      .map(line => line.id);
     const givenCodeLines = this.given.slice();
     const givenIdlist = givenCodeLines.map(line => line.id);
     if (this.options.trashId) {
@@ -759,11 +735,8 @@ class ParsonsWidget {
     );
   }
   codeLinesToHTML(codelineIDs, destinationID) {
-    const lineHTML = [];
-    for (const id of codelineIDs) {
-      const line = this.getLineById(id);
-      lineHTML.push(this.codeLineToHTML(line));
-    }
+    const lineHTML = codelineIDs
+      .map(id => this.codeLineToHTML(this.getLineById(id)));
     return '<ul id="ul-' + destinationID + '">' + lineHTML.join("") + "</ul>";
   }
   /** modifies the DOM by inserting exercise elements into it */
@@ -853,10 +826,8 @@ class ParsonsWidget {
     // Log the original codelines in the exercise in order to be able to
     // match the input/output hashes to the code later on. We need only a
     // few properties of the codeline objects
-    const bindings = [];
-    for (const line of this.modified_lines) {
-      bindings.push({ code: line.code, distractor: line.distractor });
-    }
+    const bindings = this.modified_lines
+      .map(line => { return { code: line.code, distractor: line.distractor }; });
     this.addLogEntry({ type: "init", time: new Date(), bindings: bindings });
   }
 }
