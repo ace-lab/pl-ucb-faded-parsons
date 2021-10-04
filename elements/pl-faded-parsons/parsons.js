@@ -347,7 +347,7 @@ class ParsonsWidget {
 
     // a solution to the problem that after refreshing codelines
     // will remember their indent in the view, but not in model
-    $("#ul-parsons-solution").ready(() => {
+    setTimeout(() => {
       for (const line of this.modified_lines) {
         const elem = line.elem();
         if (elem) {
@@ -358,7 +358,7 @@ class ParsonsWidget {
           }
         }
       }
-    });
+    }, 100);
   }
   getHash(searchString) {
     const hash = [],
