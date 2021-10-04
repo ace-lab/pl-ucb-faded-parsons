@@ -521,25 +521,21 @@ class ParsonsWidget {
     }
 
     const ids = [];
-    for (let i = 0; i < h.length; i++) {
-      lineValues = h[i].split("_");
+    for (const item of h) {
+      lineValues = item.split("_");
       ids.push(this.modified_lines[lineValues[0]].id);
     }
     return ids;
   }
   updateIndentsFromHash(hash) {
     let lineValues;
-    let h;
 
-    if (hash === "-" || hash === "" || hash === null) {
-      h = [];
-    } else {
-      h = hash.split("-");
-    }
+    const h = (hash === "-" || hash === "" || hash === null) ? 
+      [] : hash.split("-");
 
     const ids = [];
-    for (let i = 0; i < h.length; i++) {
-      lineValues = h[i].split("_");
+    for (const item of h) {
+      lineValues = item.split("_");
       this.modified_lines[lineValues[0]].indent = Number(lineValues[1]);
       this.updateHTMLIndent(this.modified_lines[lineValues[0]].id);
     }
@@ -621,8 +617,8 @@ class ParsonsWidget {
         : this.getRandomPermutation
     )(this.modified_lines.length);
     const idlist = [];
-    for (const i in permutation) {
-      idlist.push(this.modified_lines[permutation[i]].id);
+    for (const n of permutation) {
+      idlist.push(this.modified_lines[n].id);
     }
     if (this.options.trashId) {
       this.createHTMLFromLists([], idlist);
@@ -656,16 +652,13 @@ class ParsonsWidget {
     const codeLines = this.modified_lines.slice();
     codeLines.sort(compare);
     const idlist = [];
-    for (let i = 0; i < codeLines.length; i += 1) {
-      if (this.given.slice().indexOf(codeLines[i]) < 0) {
-        idlist.push(codeLines[i].id);
+    for (const line of codeLines) {
+      if (this.given.slice().indexOf(line) < 0) {
+        idlist.push(line.id);
       }
     }
     const givenCodeLines = this.given.slice();
-    const givenIdlist = [];
-    for (let i = 0; i < givenCodeLines.length; i += 1) {
-      givenIdlist.push(givenCodeLines[i].id);
-    }
+    const givenIdlist = givenCodeLines.map(line => line.id);
     if (this.options.trashId) {
       this.createHTMLFromLists(givenIdlist, idlist);
     } else {
@@ -767,8 +760,8 @@ class ParsonsWidget {
   }
   codeLinesToHTML(codelineIDs, destinationID) {
     const lineHTML = [];
-    for (const id in codelineIDs) {
-      const line = this.getLineById(codelineIDs[id]);
+    for (const id of codelineIDs) {
+      const line = this.getLineById(id);
       lineHTML.push(this.codeLineToHTML(line));
     }
     return '<ul id="ul-' + destinationID + '">' + lineHTML.join("") + "</ul>";
@@ -861,8 +854,7 @@ class ParsonsWidget {
     // match the input/output hashes to the code later on. We need only a
     // few properties of the codeline objects
     const bindings = [];
-    for (let i = 0; i < this.modified_lines.length; i++) {
-      const line = this.modified_lines[i];
+    for (const line of this.modified_lines) {
       bindings.push({ code: line.code, distractor: line.distractor });
     }
     this.addLogEntry({ type: "init", time: new Date(), bindings: bindings });
