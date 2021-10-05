@@ -61,7 +61,7 @@ def get_function_desc(node: Union[FunctionDef, AsyncFunctionDef]) -> str:
     if not doc:
         return doc
     # cannot allow newlines, will break server.py file
-    return doc.replace('\n', ' ').strip()
+    return doc.replace('\n', '<br>').strip()
 
 
 def get_function_type(node: Union[FunctionDef, AsyncFunctionDef]) -> str:
