@@ -28,51 +28,47 @@ class LineBasedGrader {
     // found this codeline. This is used to find the best indices for each
     // codeline in the student's code for the LIS computation and, for example,
     // assigns appropriate indices for duplicate lines.
-    const lastFoundCodeIndex = {};
+    var lastFoundCodeIndex = {}; // left as var because weird memoization happens here
     $.each(studentCodeLineObjects, function (_index, lineObject) {
       // find the first matching line in the model solution
       // starting from where we have searched previously
-      for (
-        let i =
-          typeof lastFoundCodeIndex[lineObject.code] !== "undefined"
-            ? lastFoundCodeIndex[lineObject.code] + 1
-            : 0;
-        i < parson.model_solution.length;
-        i++
-      ) {
+      const lineObjectCodeExists = typeof lastFoundCodeIndex[lineObject.code] !== "undefined";
+      const lastEnd = lineObjectCodeExists ?
+          lastFoundCodeIndex[lineObject.code] : -1;
+      
+      for (let i = lastEnd + 1; i < parson.model_solution.length; i++) {
         if (parson.model_solution[i].code === lineObject.code) {
           // found a line in the model solution that matches the student's line
           lastFoundCodeIndex[lineObject.code] = i;
           lineObject.lisIgnore = false;
           // This will be used in LIS computation
           lineObject.position = i;
-          break;
+          return;
         }
       }
-      if (i === parson.model_solution.length) {
-        if (typeof lastFoundCodeIndex[lineObject.code] === "undefined") {
-          // Could not find the line in the model solution at all,
-          // it must be a distractor
-          // => add to feedback, log, and ignore in LIS computation
-          wrong_order = true;
-          lineObject.markIncorrectPosition();
-          incorrectLines.push(lineObject.orig);
-          lineObject.lisIgnore = true;
-        } else {
-          // The line is part of the solution but there are now
-          // too many instances of the same line in the student's code
-          // => Let's just have their correct position to be the same
-          // as the last one actually found in the solution.
-          // LIS computation will handle such duplicates properly and
-          // choose only one of the equivalent positions to the LIS and
-          // extra duplicates are left in the inverse and highlighted as
-          // errors.
-          // TODO This method will not always give the most intuitive
-          // highlights for lines to supposed to be moved when there are
-          // several extra duplicates in the student's code.
-          lineObject.lisIgnore = false;
-          lineObject.position = lastFoundCodeIndex[lineObject.code];
-        }
+
+      if (!lineObjectCodeExists) {
+        // Could not find the line in the model solution at all,
+        // it must be a distractor
+        // => add to feedback, log, and ignore in LIS computation
+        wrong_order = true;
+        lineObject.markIncorrectPosition();
+        incorrectLines.push(lineObject.orig);
+        lineObject.lisIgnore = true;
+      } else {
+        // The line is part of the solution but there are now
+        // too many instances of the same line in the student's code
+        // => Let's just have their correct position to be the same
+        // as the last one actually found in the solution.
+        // LIS computation will handle such duplicates properly and
+        // choose only one of the equivalent positions to the LIS and
+        // extra duplicates are left in the inverse and highlighted as
+        // errors.
+        // TODO This method will not always give the most intuitive
+        // highlights for lines to supposed to be moved when there are
+        // several extra duplicates in the student's code.
+        lineObject.lisIgnore = false;
+        lineObject.position = lastFoundCodeIndex[lineObject.code];
       }
     });
 
