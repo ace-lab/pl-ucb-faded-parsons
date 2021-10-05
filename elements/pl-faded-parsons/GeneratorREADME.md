@@ -201,7 +201,7 @@ questions
 |   square_question.html
 ```
 
-Instead of writing a docstring, you may choose to write a file (eg for syntax-highlighting/checking) and use an import region like so:
+Instead of writing a docstring, you may choose to write a file (eg for syntax-highlighting/checking):
 ``` html
 <!-- square_question.html -->
 Make a function <code>square_color</code> that tells if a chess 
@@ -231,7 +231,7 @@ print([x % 3 for x in nums])
 
 It turns 0..8 into (0, 1 , 2) repeating!
 ```
-Then in `square_color.py`:
+And then use an import region in `square_color.py`:
 ``` python
 ## import square_question.html as question_text ##
 ...
@@ -256,6 +256,7 @@ They will have no visibility of this code, but its name will be availiable to th
 
 This code will be parsed and the type information and documentation extracted.
 They will be used as help text in prairielearn and displayed in the prompt.
+It cannot contain blanks.
 
 The rest of the file proceeds in the usual way:
 
@@ -272,7 +273,7 @@ def square_color(pos): #0given
 
 ### Advanced Import Regions
 
-Note that is possible to direct imports at previously generated files to prevent the tool from overwritting data, eg
+Note that is possible to direct imports at previously generated files to effectively prevent the tool from overwritting data, eg
 
 ``` python
 ## import question_name/server.py as server.py ##
@@ -283,12 +284,12 @@ Note that is possible to direct imports at previously generated files to prevent
 See the regions section for special names like `test` and `question_text`. All names that aren't special simply write to a file of the same name, so
 
 ``` python
-## res/data.txt ##
+## res/pi.txt ##
 3.14159
-## res/data.txt ##
+## res/pi.txt ##
 ```
 
-will write the single line `3.14159` to `question_name/res/data.txt`.
+will write the single line `3.14159` to `question_name/res/pi.txt`.
 
 ## Generated Files
 
