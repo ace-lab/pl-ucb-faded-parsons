@@ -2,6 +2,8 @@ from argparse import *
 from os.path import *
 from typing import *
 
+from functools import partial
+
 from os import getcwd, listdir, makedirs, PathLike
 
 from lib.consts import Bcolors, PROGRAM_DESCRIPTION
@@ -14,10 +16,12 @@ def file_ext(file_path: PathLike[AnyStr]) -> AnyStr:
     """Returns the file extension (or '' if none exists)"""
     return splitext(basename(file_path))[1]
 
+
 def write_to(parent_dir: PathLike[AnyStr], file_path: PathLike[AnyStr], data: str):
-    """Opens ./{parent_dir}/{file_path} and writes {data} to it"""
+    """Opens ./`parent_dir`/`file_path` and writes `data` to it"""
     with open(join(parent_dir, file_path), 'w+') as f:
         f.write(data)
+
 
 def make_if_absent(dir_path: str):
     """ Creates the director(ies - nested ok) if they do not yet exist.
@@ -25,20 +29,44 @@ def make_if_absent(dir_path: str):
     """
     makedirs(dir_path, exist_ok=True)
 
+
+def read_region_source_lines(source_path: str, region_source: str) -> str:
+    """ Reads the region_source and returns its contents, or raises
+        a FileNotFoundError or other OSError in opening the file.
+
+        Searches in ./ and ./`source_path`/ for `region_source`
+    """
+    if not exists(region_source):
+        region_source = join(dirname(source_path), region_source)
+
+    if not exists(region_source):
+        raise FileNotFoundError(region_source)
+
+    with open(region_source, 'r') as f:  # may raise OSError
+        return ''.join(f.readlines())
+
+
 def auto_detect_sources() -> list[PathLike[AnyStr]]:
     Bcolors.warn('** No paths provided, auto-detecting questions directory **')
-    info_json_path = resolve_source_path('infoCourse.json', silent=True)
-    questions_dir = join(dirname(info_json_path), 'questions')
-    
-    if exists(questions_dir):
-        resolve = lambda n: join(questions_dir, n)
-        is_valid = lambda f: isfile(f)
-        return list(filter(is_valid, map(resolve, listdir(questions_dir))))
-    
-    Bcolors.fail('** Auto-dection failed. Please provide source paths (--help for more info) **')
-    exit(1)
 
-def resolve_source_path(source_path: str, silent=False) -> str:
+    try:
+        questions_dir = resolve_path(
+            'questions', path_is_dir=True, silent=True)
+    except FileNotFoundError as e:
+        Bcolors.fail(
+            '** Auto-detection failed. Please provide paths to sources. (use --help for more info) **')
+        if e.args:
+            Bcolors.fail(*e.args)
+
+    resolve = partial(join, questions_dir)
+    def is_valid(f): return isfile(f) and file_ext(f).endswith('py')
+    return list(filter(is_valid, map(resolve, listdir(questions_dir))))
+
+
+def resolve_path(path: str, *,
+                 silent: bool = False,
+                 path_is_dir: bool = False,
+                 ) -> str:
     """ Attempts to find a matching source path in the following destinations:
 
         ```
@@ -55,18 +83,18 @@ def resolve_source_path(source_path: str, silent=False) -> str:
         ```
         Will search ./questions/ 4th, in case this is run from <course>/
     """
-    if isdir(source_path) or not file_ext(source_path):
-        source_path += '.py'
-    
-    if exists(source_path):
-        return source_path
+    if not path_is_dir and (isdir(path) or not file_ext(path)):
+        path += '.py'
+
+    if exists(path):
+        return path
 
     def warn():
         if not silent:
-            Bcolors.warn('- Could not find', original, 
-                'in current directory. Proceeding with detected file.')
-    
-    original = source_path
+            Bcolors.warn('- Could not find', original,
+                         'in current directory. Proceeding with detected file.')
+
+    original = path
 
     # if this is in 'elements/pl-faded-parsons', back up to course directory
     h, t0 = split(getcwd())
@@ -77,41 +105,44 @@ def resolve_source_path(source_path: str, silent=False) -> str:
         if exists(new_path):
             warn()
             return new_path
-        
         # try original in course directory
         new_path = join('..', '..', original)
         if exists(new_path):
             warn()
             return new_path
-    
     new_path = join('questions', original)
     if exists(new_path):
         warn()
         return new_path
-    
-    raise FileNotFoundError('Could not find file ' + original)
+
+    raise FileNotFoundError('Could not find ' +
+                            ('directory ' if path_is_dir else 'file ') + original)
 
 
-def parse_args(arg_text:str = None) -> Namespace:
+def parse_args(arg_text: str = None) -> Namespace:
     """ Returns a Namespace containing all the flag and path data. 
         If arg_text is not provided, uses `sys.argv`.
     """
-    parser = ArgumentParser(description=PROGRAM_DESCRIPTION, formatter_class=RawTextHelpFormatter)
-    
-    parser.add_argument('--profile', action='store_true', help='prints profile data after running')
-    parser.add_argument('--quiet', action='store_true', help='restricts logging to warnings and errors only')
-    parser.add_argument('--no-parse', action='store_true', help='prevents the code from being parsed by py.ast to derive content')
+    parser = ArgumentParser(description=PROGRAM_DESCRIPTION,
+                            formatter_class=RawTextHelpFormatter)
+
+    parser.add_argument('--profile', action='store_true',
+                        help='prints profile data after running')
+    parser.add_argument('--quiet', action='store_true',
+                        help='restricts logging to warnings and errors only')
+    parser.add_argument('--no-parse', action='store_true',
+                        help='prevents the code from being parsed by py.ast to derive content')
 
     parser.add_argument('source_path', action='append', nargs='*')
-    parser.add_argument('--force-json', action='append', metavar='path', help='will overwrite the question\'s info.json file with auto-generated content')
+    parser.add_argument('--force-json', action='append', metavar='path',
+                        help='will overwrite the question\'s info.json file with auto-generated content')
 
     # if arg_text is not set, then it gets from the command line
     ns = parser.parse_intermixed_args(args=arg_text)
-    
+
     # unpack weird nesting, delete confusing name
     ns.source_paths = [p for l in ns.source_path for p in l]
     del ns.source_path
 
     ns.force_json = ns.force_json or list()
     return ns
- 

@@ -3,17 +3,18 @@ from typing import *
 from os.path import join
 from re import compile, Pattern
 
+
 class Bcolors:
     # https://stackoverflow.com/questions/287871/how-to-print-colored-text-to-the-terminal
-    HEADER: Final = '\033[95m'
-    OKBLUE: Final = '\033[94m'
-    OKCYAN: Final = '\033[96m'
-    OKGREEN: Final = '\033[92m'
-    WARNING: Final = '\033[93m'
-    FAIL: Final = '\033[91m'
-    ENDC: Final = '\033[0m'
-    BOLD: Final = '\033[1m'
-    UNDERLINE: Final = '\033[4m'
+    HEADER: Final[str] = '\033[95m'
+    OKBLUE: Final[str] = '\033[94m'
+    OKCYAN: Final[str] = '\033[96m'
+    OKGREEN: Final[str] = '\033[92m'
+    WARNING: Final[str] = '\033[93m'
+    FAIL: Final[str] = '\033[91m'
+    ENDC: Final[str] = '\033[0m'
+    BOLD: Final[str] = '\033[1m'
+    UNDERLINE: Final[str] = '\033[4m'
 
     @staticmethod
     def f(color: str, *args, sep=' '):
@@ -95,32 +96,28 @@ MAIN_PATTERN: Final[Pattern] = compile(
     #                    and if the next line doesn't have a region comment,
     #                    it consumes the trailing newline as well.
     r'(?:\r?\n|^)[ \t]*\#\#[\t ]*(.*?)\s*\#\#.*?(?:(?=\r?\n[ \t]*\#\#)|\r?\n|$)|' +
-    # - capture group 1:  (one-line) comment, up to next comment or newline 
+    # - capture group 1:  (one-line) comment, up to next comment or newline
     #                     (excluding the newline/eof)
     r'(\#.*?)(?=\#|\r?\n|$)|' +
     # - capture group 2: (multi-line) triple-quote string literal
-    r'(\"\"\"[\s\S]*?\"\"\")|' + 
+    r'(\"\"\"[\s\S]*?\"\"\")|' +
     # - capture group 3:
     #     - (one-line) single-apostrophe string literal
     #     - (one-line) single-quote string literal
-    r'(\'.*?\'|\".*?\")|' + 
+    r'(\'.*?\'|\".*?\")|' +
     # - capture group 4:  (one-line) answer surrounded by ?'s (excluding ?'s)
     r'\?(.*?)\?'
 )
 
-SPECIAL_COMMENT_PATTERN: Final[Pattern] = compile(r'^#(blank[^#]*|\d+given)\s*')
+SPECIAL_COMMENT_PATTERN: Final[Pattern] = compile(
+    r'^#(blank[^#]*|\d+given)\s*'
+)
 
 BLANK_SUBSTITUTE: Final[str] = '!BLANK'
 
-SPECIAL_REGIONS: Final[str] = {
-    'setup': join('test', 'setup_code.py'),
-    'setup_code': join('test', 'setup_code.py'),
-    'ans': join('test', 'ans.py'),
-    'answer': join('test', 'ans.py'),
-    'answer_code': join('test', 'ans.py'),
-    'question': 'question_text',
-    'question_code': 'question_text'
-}
+REGION_IMPORT_PATTERN: Final[Pattern] = compile(
+    r'^\s*import\s*(\w.*)\s+as\s+(\w.*?)\s*$'
+)
 
 PROGRAM_DESCRIPTION: Final[str] = Bcolors.f(Bcolors.OKGREEN, ' A tool for generating faded parsons problems.') + """
 
@@ -145,5 +142,11 @@ PROGRAM_DESCRIPTION: Final[str] = Bcolors.f(Bcolors.OKGREEN, ' A tool for genera
        question directory, excluding these special regions:
          explicit: `test` `setup_code`
          implicit: `answer_code` `prompt_code` `question_text`
+     - Code in `setup_code` will be parsed to extract exposed names unless the --no-parse
+       flag is set. Type annotations and function docstrings are used to fill out server.py
      - Any custom region that clashes with an automatically generated file name
-       will overwrite the automatically generated code"""
+       will overwrite the automatically generated code
+ - Import regions allow for the contents of arbitrary files to be loaded as regions
+     - They are formatted as `## import {rel_file_path} as {region name} ##`
+        where `rel_file_path` is the relative path to the file from the source file
+     - Like regular regions, they cannot be used inside of another region"""
