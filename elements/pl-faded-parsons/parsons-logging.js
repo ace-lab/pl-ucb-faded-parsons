@@ -1,70 +1,74 @@
-// // Import the functions you need from the SDKs you need
-// import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.2/firebase-app.js";
-// import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.0.2/firebase-analytics.js";
-// // TODO: Add SDKs for Firebase products that you want to use
-// // https://firebase.google.com/docs/web/setup#available-libraries
-
-// // Your web app's Firebase configuration
-// // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-// const firebaseConfig = {
-//   apiKey: "AIzaSyD3RdPsfO50vjyFKD6wYseNvdaQZFRslZg",
-//   authDomain: "faded-parsons-logging.firebaseapp.com",
-//   projectId: "faded-parsons-logging",
-//   storageBucket: "faded-parsons-logging.appspot.com",
-//   messagingSenderId: "591608062092",
-//   appId: "1:591608062092:web:4b4e4963e6026136119ba9",
-//   measurementId: "G-NCF4CRWMHG"
-// };
-
-// // Initialize Firebase
-// const app = initializeApp(firebaseConfig);
-// const analytics = getAnalytics(app);
+// https://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
+function hash(s) {
+    let hash = 0;
+    for (let i = 0; i < s.length; i++) {
+      hash = ((hash << 5) - hash) + s.charCodeAt(i);
+      hash |= 0;
+    }
+    return hash;
+};
 
 class ParsonsLogger {
     constructor(widget) {
         this.widget = widget;
-        this.events = [];
-        this.last_field_update = null;
-    }
-    logEvent(e) {
-        e['widgetId'] = this.widget.options.sortableId;
-        e['time'] = e['time'] || Date.now();
-        this.events.push(e);
-    }
-    onSubmit() {
-        const e = { type: 'submit' };
+        this._events = [];
+        this._last_typing_event = null;
 
-        console.log('submit event', e);
-        this.logEvent(e);
-    }
-    onSortableUpdate(event, ui) {
-        console.log(event);
-    }
-    finishTypingEvent() {
-        if (!this.last_field_update)
-            return;
+        this._userHash = hash($('#username-nav')[0].innerText);
+        this._problemHash = hash(document.title);
 
-        clearTimeout(this.last_field_update.timeout);
+        this._sessionHash = this._userHash ^ this._problemHash;
 
-        const e = {
-            type: 'typed',
-            time: this.last_field_update.start,
-            duration: Date.now() - this.last_field_update.start,
-            codelineName: this.last_field_update.codelineName,
-            codelineValue: this.last_field_update.value,
+        const prevHash = window.localStorage.getItem('sessionHash');
+        const resuming = prevHash && prevHash === ("" + this._sessionHash);
+        
+        window.localStorage.setItem('sessionHash', this._sessionHash);
+
+        if (!resuming) {
+            window.localStorage.removeItem('docId'); // need a new doc
+        }
+        
+        const e = { 
+            type: resuming ? 'resume' : 'init', 
+            problemHash: this._problemHash, 
+            userHash: this._userHash,
+            lines: [] 
         };
 
-        console.log('typing event', e);
-        this.logEvent(e);
+        for (const line of widget.modified_lines) {
+            e.lines.push({ id: line.id, code: line.code, indent: line.indent })
+        }
 
-        this.last_field_update = null;
+        this._logEvent(e);
     }
+    
+    onSubmit() {
+        this._logEvent({ type: 'submit' });
+        this._commit();
+    }
+    
+    onSortableUpdate(event, ui) {
+        if (event.type === 'reindent') {
+            this._logEvent(event);
+            return;
+        }
+        const lineId = ui.item[0].id;
+        const solLines = [];
+        for (const child of event.target.children) {
+            const lineId = child.id;
+            const modLine = this.widget.getLineById(lineId);
+            const indent = modLine && modLine.indent;
+            solLines.push({ id: lineId, indent: indent});
+        }
+        this._logEvent({ type: event.type, targetId: lineId, solutionLines: solLines });
+    }
+    
     onBlankUpdate(event, codeline) {
         switch (event.inputType) {
             case 'insertFromPaste':
             case 'insertFromPasteAsQuotation':
             case 'insertFromDrop':
-                this.finishTypingEvent();
+                this._finishTypingEvent();
 
                 const e = {
                     type: 'paste',
@@ -73,32 +77,91 @@ class ParsonsLogger {
                     codelineValue: codeline.value,
                 };
 
-                console.log('paste event', e);
-                this.logEvent(e);
+                this._logEvent(e);
                 break;
             case 'deleteByDrag':
             case 'deleteByCut':
             // do something special?
             // right now just continues to default...
             default: // generic typing event
-                if (this.last_field_update) {
+                if (this._last_typing_event) {
                     // if the last update was to a different field, finish the previous event
                     // otherwise clear the timeout
-                    if (this.last_field_update.codelineName !== codeline.name) {
-                        this.finishTypingEvent();
+                    if (this._last_typing_event.codelineName !== codeline.name) {
+                        this._finishTypingEvent();
                     } else {
-                        clearTimeout(this.last_field_update.timeout);
+                        clearTimeout(this._last_typing_event.timeout);
                     }
                 }
 
-                this.last_field_update = {
+                this._last_typing_event = {
                     codelineName: codeline.name,
                     e: event,
-                    start: this.last_field_update ?
-                        this.last_field_update.start : Date.now(),
+                    start: this._last_typing_event ?
+                        this._last_typing_event.start : Date.now(),
                     value: codeline.value,
-                    timeout: setTimeout(() => this.finishTypingEvent(), 1000),
+                    timeout: setTimeout(() => this._finishTypingEvent(), 1000),
                 };
+        }
+    }
+
+    _logEvent(e) {
+        this._finishTypingEvent();
+
+        e['widgetId'] = this.widget.options.sortableId;
+        e['time'] = e['time'] || Date.now();
+        this._events.push(e);
+    }
+    
+    _finishTypingEvent() {
+        if (!this._last_typing_event) return;
+
+        clearTimeout(this._last_typing_event.timeout);
+
+        const e = {
+            type: 'typed',
+            time: this._last_typing_event.start,
+            duration: Date.now() - this._last_typing_event.start,
+            codelineName: this._last_typing_event.codelineName,
+            codelineValue: this._last_typing_event.value,
+        };
+
+        this._last_typing_event = null;
+
+        this._logEvent(e);
+    }
+    
+    async _commit() {
+        try {
+            const Fr = Firebase.Firestore;
+            const db = Firebase.app.db;
+
+            const solutionCode = this.widget.solutionCode().map(t => t.replaceAll('\n', ';'));
+            
+            let docId = window.localStorage.getItem('docId');
+
+            if (docId) {
+                await Fr.updateDoc(Fr.doc(db, "logs", docId), {
+                    log: Fr.arrayUnion(...this._events),
+                    solutionCode: solutionCode,
+                 });
+            } else {
+                const docRef = await Fr.addDoc(Fr.collection(db, "logs"), {
+                    docTitle: document.title,
+                    problemHash: this._problemHash,
+                    userHash: this._userHash,
+                    solutionCode: solutionCode,
+                    log: this._events,
+                    sent: Date.now(),
+                });
+
+                docId = docRef.id;
+                window.localStorage.setItem('docId', docId);
+            }
+            
+            console.log("Document written with ID: ", docId);
+        } catch (e) {
+            alert("Error adding document:\n" + e.toString());
         }
     }
 }
