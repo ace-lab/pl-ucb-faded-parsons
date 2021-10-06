@@ -9,3 +9,4 @@ __pycache__/
 *.so
 
 node_modules
+**/.DS_Store
