@@ -8,10 +8,30 @@ function hash(s) {
     return hash;
 }
 
-class ParsonsLogger {
+function identity(x) { return x; }
+function compose(f, g) {
+    if (f === identity) return g;
+    if (g === identity) return f;
+    return function(x) { return f(g(x)); }
+}
+
+function coalesce(...args) {
+    let prev = args.shift();
+    for (const curr of args) {
+        if (prev == null) return prev;
+        if (curr == null) return curr;
+
+        prev = typeof(prev) === 'function' ?
+                prev(curr) : prev[curr];
+    }
+    return prev;
+}
+
+class Logger {
     constructor(widget) {
         this.widget = widget;
         this._events = [];
+        this._event_mappings = {};
         this._last_typing_event = null;
 
         const usernameStr = document.getElementById('navbarDropdown').innerText.trim();
@@ -42,6 +62,11 @@ class ParsonsLogger {
         };
 
         this._logEvent(e);
+    }
+
+    mapDataOn(event_type, event_mapper) {
+        const old = this._event_mappings[event_type] || identity;
+        this._event_mappings[event_type] = compose(event_mapper, old);
     }
     
     onSubmit() {
@@ -108,10 +133,15 @@ class ParsonsLogger {
     }
 
     _logEvent(e) {
+        if (e == null)
+            throw new Error('events cannot be null');
+        
         this._finishTypingEvent();
 
         e.widgetId ||= this.widget.options.sortableId;
         e.time ||= Date.now();
+
+        e = coalesce(this._event_mappings, e.type, e) || e;
 
         this._events.push(e);
     }
@@ -167,5 +197,11 @@ class ParsonsLogger {
         } catch (e) {
             alert("Error adding document:\n" + e.toString());
         }
+    }
+}
+
+class ParsonsLogger extends Logger {
+    constructor(widget) {
+        super(widget);
     }
 }
