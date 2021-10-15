@@ -6,7 +6,7 @@ function hash(s) {
       hash |= 0;
     }
     return hash;
-};
+}
 
 class ParsonsLogger {
     constructor(widget) {
@@ -14,7 +14,10 @@ class ParsonsLogger {
         this._events = [];
         this._last_typing_event = null;
 
-        this._userHash = hash($('#username-nav')[0].innerText);
+        const usernameStr = document.getElementById('navbarDropdown').innerText.trim();
+
+        this._usernameStr = usernameStr;
+        this._userHash = hash(usernameStr);
         this._problemHash = hash(document.title);
 
         this._sessionHash = this._userHash ^ this._problemHash;
@@ -32,12 +35,11 @@ class ParsonsLogger {
             type: resuming ? 'resume' : 'init', 
             problemHash: this._problemHash, 
             userHash: this._userHash,
-            lines: [] 
+            usernameStr: usernameStr,
+            lines: widget.modified_lines.map(function (line) {
+                return { id: line.id, code: line.code, indent: line.indent };
+            }),
         };
-
-        for (const line of widget.modified_lines) {
-            e.lines.push({ id: line.id, code: line.code, indent: line.indent })
-        }
 
         this._logEvent(e);
     }
@@ -108,8 +110,9 @@ class ParsonsLogger {
     _logEvent(e) {
         this._finishTypingEvent();
 
-        e['widgetId'] = this.widget.options.sortableId;
-        e['time'] = e['time'] || Date.now();
+        e.widgetId ||= this.widget.options.sortableId;
+        e.time ||= Date.now();
+
         this._events.push(e);
     }
     
@@ -133,7 +136,7 @@ class ParsonsLogger {
     
     async _commit() {
         try {
-            const Fr = Firebase.Firestore;
+            const FStore = Firebase.Firestore;
             const db = Firebase.app.db;
 
             const solutionCode = this.widget.solutionCode().map(t => t.replaceAll('\n', ';'));
@@ -141,15 +144,16 @@ class ParsonsLogger {
             let docId = window.localStorage.getItem('docId');
 
             if (docId) {
-                await Fr.updateDoc(Fr.doc(db, "logs", docId), {
-                    log: Fr.arrayUnion(...this._events),
+                await FStore.updateDoc(FStore.doc(db, "logs", docId), {
+                    log: FStore.arrayUnion(...this._events),
                     solutionCode: solutionCode,
                  });
             } else {
-                const docRef = await Fr.addDoc(Fr.collection(db, "logs"), {
+                const docRef = await FStore.addDoc(FStore.collection(db, "logs"), {
                     docTitle: document.title,
                     problemHash: this._problemHash,
                     userHash: this._userHash,
+                    usernameStr: this._usernameStr,
                     solutionCode: solutionCode,
                     log: this._events,
                     sent: Date.now(),
