@@ -31,7 +31,6 @@ class Logger {
     constructor(widget) {
         this.widget = widget;
         this._events = [];
-        this._event_mappings = {};
         this._last_typing_event = null;
 
         const usernameStr = document.getElementById('navbarDropdown').innerText.trim();
@@ -56,38 +55,29 @@ class Logger {
             problemHash: this._problemHash, 
             userHash: this._userHash,
             usernameStr: usernameStr,
-            lines: widget.modified_lines.map(function (line) {
-                return { id: line.id, code: line.code, indent: line.indent };
-            }),
         };
 
-        this._logEvent(e);
+        this.logEvent(e);
     }
 
     mapDataOn(event_type, event_mapper) {
+        this._event_mappings ||= {};
         const old = this._event_mappings[event_type] || identity;
         this._event_mappings[event_type] = compose(event_mapper, old);
     }
-    
-    onSubmit() {
-        this._logEvent({ type: 'submit' });
-        this._commit();
-    }
-    
-    onSortableUpdate(event, ui) {
-        if (event.type === 'reindent') {
-            this._logEvent(event);
-            return;
-        }
-        const lineId = ui.item[0].id;
-        const solLines = [];
-        for (const child of event.target.children) {
-            const lineId = child.id;
-            const modLine = this.widget.getLineById(lineId);
-            const indent = modLine && modLine.indent;
-            solLines.push({ id: lineId, indent: indent});
-        }
-        this._logEvent({ type: event.type, targetId: lineId, solutionLines: solLines });
+
+    logEvent(e) {
+        if (e == null)
+            throw new Error('events cannot be null');
+        
+        this._finishTypingEvent();
+
+        e.widgetId ||= this.widget.options.sortableId;
+        e.time ||= Date.now();
+
+        e = coalesce(this._event_mappings, e.type, e) || e;
+
+        this._events.push(e);
     }
     
     onBlankUpdate(event, codeline) {
@@ -104,7 +94,7 @@ class Logger {
                     codelineValue: codeline.value,
                 };
 
-                this._logEvent(e);
+                this.logEvent(e);
                 break;
             case 'deleteByDrag':
             case 'deleteByCut':
@@ -131,20 +121,6 @@ class Logger {
                 };
         }
     }
-
-    _logEvent(e) {
-        if (e == null)
-            throw new Error('events cannot be null');
-        
-        this._finishTypingEvent();
-
-        e.widgetId ||= this.widget.options.sortableId;
-        e.time ||= Date.now();
-
-        e = coalesce(this._event_mappings, e.type, e) || e;
-
-        this._events.push(e);
-    }
     
     _finishTypingEvent() {
         if (!this._last_typing_event) return;
@@ -161,10 +137,10 @@ class Logger {
 
         this._last_typing_event = null;
 
-        this._logEvent(e);
+        this.logEvent(e);
     }
     
-    async _commit() {
+    async commit() {
         try {
             const FStore = Firebase.Firestore;
             const db = Firebase.app.db;
@@ -202,6 +178,39 @@ class Logger {
 
 class ParsonsLogger extends Logger {
     constructor(widget) {
+        function onStart(e) {
+            e.lines = widget.modified_lines.map(function (line) {
+                return { id: line.id, code: line.code, indent: line.indent };
+            });
+            return e;
+        }
+
+        super.mapDataOn('resume', onStart)
+        super.mapDataOn('init', onStart)
+
+        super.mapDataOn
+        
         super(widget);
+    }
+    
+    onSubmit() {
+        this.logEvent({ type: 'submit' });
+        this.commit();
+    }
+    
+    onSortableUpdate(event, ui) {
+        if (event.type === 'reindent') {
+            this.logEvent(event);
+            return;
+        }
+        const lineId = ui.item[0].id;
+        const solLines = [];
+        for (const child of event.target.children) {
+            const lineId = child.id;
+            const modLine = this.widget.getLineById(lineId);
+            const indent = modLine && modLine.indent;
+            solLines.push({ id: lineId, indent: indent});
+        }
+        this.logEvent({ type: event.type, targetId: lineId, solutionLines: solLines });
     }
 }
