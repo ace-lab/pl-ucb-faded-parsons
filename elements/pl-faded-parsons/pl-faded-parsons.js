@@ -48,7 +48,7 @@ const ParsonsGlobal = {
         ParsonsGlobal.logger && ParsonsGlobal.logger.onSortableUpdate(event, ui);
       },
       'onBlankUpdate': (event, codeline) => {
-        ParsonsGlobal.logger && ParsonsGlobal.logger.onBlankUpdate(event, codeline);
+        ParsonsGlobal.logger && ParsonsGlobal.logger.onTextUpdate(event, codeline);
       },
       'trashId': 'starter-code',
       'max_wrong_lines': 1,

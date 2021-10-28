@@ -8,13 +8,6 @@ function hash(s) {
     return hash;
 }
 
-function identity(x) { return x; }
-function compose(f, g) {
-    if (f === identity) return g;
-    if (g === identity) return f;
-    return function(x) { return f(g(x)); }
-}
-
 function coalesce(...args) {
     let prev = args.shift();
     for (const curr of args) {
@@ -31,7 +24,13 @@ class Logger {
     constructor(widget) {
         this.widget = widget;
         this._events = [];
-        this._last_typing_event = null;
+        this._last_text_event = null;
+        this._inited = false;
+    }
+
+    init() {
+        if (this._inited) return;
+        this._inited = true;
 
         const usernameStr = document.getElementById('navbarDropdown').innerText.trim();
 
@@ -49,7 +48,7 @@ class Logger {
         if (!resuming) {
             window.localStorage.removeItem('docId'); // need a new doc
         }
-        
+
         const e = { 
             type: resuming ? 'resume' : 'init', 
             problemHash: this._problemHash, 
@@ -60,38 +59,39 @@ class Logger {
         this.logEvent(e);
     }
 
-    mapDataOn(event_type, event_mapper) {
-        this._event_mappings ||= {};
-        const old = this._event_mappings[event_type] || identity;
-        this._event_mappings[event_type] = compose(event_mapper, old);
-    }
-
     logEvent(e) {
+        if (!this._inited) this.init();
+
         if (e == null)
             throw new Error('events cannot be null');
         
-        this._finishTypingEvent();
+        this._finishTextEvent();
 
-        e.widgetId ||= this.widget.options.sortableId;
+        e.questionId ||= coalesce($, 'div.card-header.bg-primary', 0, innerText);
         e.time ||= Date.now();
 
-        e = coalesce(this._event_mappings, e.type, e) || e;
+        const mapping = this['map' + e.type];
+        if (mapping) {
+            e = mapping.call(this, e);
+        }
 
-        this._events.push(e);
+        if (e != null) { // mapping may make e null!
+            this._events.push(e);
+        }
     }
     
-    onBlankUpdate(event, codeline) {
+    onTextUpdate(event, eventId, newText) {
         switch (event.inputType) {
             case 'insertFromPaste':
             case 'insertFromPasteAsQuotation':
             case 'insertFromDrop':
-                this._finishTypingEvent();
+                this._finishTextEvent();
 
                 const e = {
                     type: 'paste',
                     duration: 0,
-                    codelineName: codeline.name,
-                    codelineValue: codeline.value,
+                    eventId: eventId,
+                    value: newText,
                 };
 
                 this.logEvent(e);
@@ -100,42 +100,42 @@ class Logger {
             case 'deleteByCut':
             // do something special?
             // right now just continues to default...
-            default: // generic typing event
-                if (this._last_typing_event) {
+            default: // generic text event
+                if (this._last_text_event) {
                     // if the last update was to a different field, finish the previous event
                     // otherwise clear the timeout
-                    if (this._last_typing_event.codelineName !== codeline.name) {
-                        this._finishTypingEvent();
+                    if (this._last_text_event.eventId !== eventId) {
+                        this._finishTextEvent();
                     } else {
-                        clearTimeout(this._last_typing_event.timeout);
+                        clearTimeout(this._last_text_event.timeout);
                     }
                 }
 
-                this._last_typing_event = {
-                    codelineName: codeline.name,
+                this._last_text_event = {
+                    eventId: eventId,
                     e: event,
-                    start: this._last_typing_event ?
-                        this._last_typing_event.start : Date.now(),
-                    value: codeline.value,
-                    timeout: setTimeout(() => this._finishTypingEvent(), 1000),
+                    start: this._last_text_event ?
+                        this._last_text_event.start : Date.now(),
+                    value: newText,
+                    timeout: setTimeout(() => this._finishTextEvent(), 1000),
                 };
         }
     }
     
-    _finishTypingEvent() {
-        if (!this._last_typing_event) return;
+    _finishTextEvent() {
+        if (!this._last_text_event) return;
 
-        clearTimeout(this._last_typing_event.timeout);
+        clearTimeout(this._last_text_event.timeout);
 
         const e = {
             type: 'typed',
-            time: this._last_typing_event.start,
-            duration: Date.now() - this._last_typing_event.start,
-            codelineName: this._last_typing_event.codelineName,
-            codelineValue: this._last_typing_event.value,
+            time: this._last_text_event.start,
+            duration: Date.now() - this._last_text_event.start,
+            value: this._last_text_event.value,
+            eventId: this._last_text_event.eventId,
         };
 
-        this._last_typing_event = null;
+        this._last_text_event = null;
 
         this.logEvent(e);
     }
@@ -178,19 +178,21 @@ class Logger {
 
 class ParsonsLogger extends Logger {
     constructor(widget) {
-        function onStart(e) {
-            e.lines = widget.modified_lines.map(function (line) {
-                return { id: line.id, code: line.code, indent: line.indent };
-            });
-            return e;
-        }
-
-        super.mapDataOn('resume', onStart)
-        super.mapDataOn('init', onStart)
-
-        super.mapDataOn
-        
         super(widget);
+    }
+
+    mapresume(e) { 
+        e.lines = this.widget.modified_lines.map(function (line) {
+            return { id: line.id, code: line.code, indent: line.indent };
+        });
+        return e;
+    }
+
+    mapinit(e) { 
+        e.lines = this.widget.modified_lines.map(function (line) {
+            return { id: line.id, code: line.code, indent: line.indent };
+        });
+        return e;
     }
     
     onSubmit() {
@@ -209,8 +211,12 @@ class ParsonsLogger extends Logger {
             const lineId = child.id;
             const modLine = this.widget.getLineById(lineId);
             const indent = modLine && modLine.indent;
-            solLines.push({ id: lineId, indent: indent});
+            solLines.push({ id: lineId, indent: indent });
         }
         this.logEvent({ type: event.type, targetId: lineId, solutionLines: solLines });
+    }
+    
+    onTextUpdate(event, codeline) {
+        super.onTextUpdate(event, codeline.name, codeline.value);
     }
 }
