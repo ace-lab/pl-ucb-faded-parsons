@@ -15,9 +15,9 @@ class ParsonsLogger extends Logger {
 
     map_init(e) { return this._map_reinit(e); }
 
-    map_commit(data) {
-        data.solutionCode = this.widget.solutionCode().map(t => t.replaceAll('\n', ';'));
-        return data;
+    map_commit(e) {
+        e.solutionCode = this.widget.solutionCode().map(t => t.replaceAll('\n', ';'));
+        return e;
     }
     
     onSortableUpdate(event, ui) {

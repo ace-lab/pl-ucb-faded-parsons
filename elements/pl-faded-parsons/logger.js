@@ -28,11 +28,34 @@ const coalesce = (...args) =>
         prev == null ? prev : 
             typeof(prev) === 'function' ? prev(curr) : prev[curr]);
 
+/**
+ * An extensible logger that tracks events and commits them.
+ * Designed specifically to handle text and submission events by default.
+ * 
+ * 
+ * Default captured events can be altered by adding a mapping method 
+ * corresponding to each type of captured events:
+ *      `init`    `resume`    `paste`    `text`    `submit`    `commit`
+ * 
+ * Extending Logger with a class that has 
+ *      `map_init`  `map_resume`  `map_paste`  `map_text`  `map_submit`  `map_commit`
+ * that each take an event and return an event (or null to cancel it) will
+ * alter the event before it enters the log.
+ * 
+ * Custom event types can be trivially created! Just use: 
+ * > logEvent({ type: 'myType' })
+ * 
+ * This type will also be compatible with the mapping method system, just
+ * provide a `map_myType` method!
+ * 
+ * Calling commit will cause the Logger to write to a Firebase repository.
+ * This requires `Firebase.Firestore` to be the Firestore module, and
+ * `Firebase.app.db` to be the current Firebase app's Firestore database.
+ */
 class Logger {
     constructor() {
         this._events = [];
         this._last_text_event = null;
-        this._inited = false;
     }
 
     _init() {
@@ -135,7 +158,7 @@ class Logger {
         clearTimeout(this._last_text_event.timeout);
 
         const e = {
-            type: 'typed',
+            type: 'text',
             time: this._last_text_event.start,
             duration: Date.now() - this._last_text_event.start,
             value: this._last_text_event.value,
