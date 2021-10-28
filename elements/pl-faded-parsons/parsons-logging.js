@@ -12,20 +12,20 @@ const hash = s => {
  * Returns the result of nesting dotting/calling to the args, returning
  * null early if any intermediate step is null.
  * 
- * > let a = { b: { c: 3, f: x => x }};
+ * > let a = { b: { c: 3, f: x => 2 * x }};
  * 
  * > coalesce(a, 'b', 'c') == 3; // a.b.c
  * 
  * > coalesce(a, 'z', 'c') == null; // a.z.c -> z == null!
  * 
- * > coalesce([1, a, 3], 1, 'b', 'f', 2) == 2;// [1, a, 3][1].b.f(2)
+ * > coalesce([1, a, 3], 1, 'b', 'f', 2) == 4;// [1, a, 3][1].b.f(2)
  * 
  * @param  {...any} args properties/args to nesting
  * @returns a0?[a1]?[a2]?...
  */
 const coalesce = (...args) =>
     args.reduce((prev, curr) =>
-        prev == null ? null : 
+        prev == null ? prev : 
             typeof(prev) === 'function' ? prev(curr) : prev[curr]);
 
 class Logger {
@@ -35,7 +35,7 @@ class Logger {
         this._inited = false;
     }
 
-    init() {
+    _init() {
         if (this._inited) return;
         this._inited = true;
 
@@ -67,17 +67,17 @@ class Logger {
     }
 
     logEvent(e) {
-        if (!this._inited) this.init();
+        if (!this._inited) this._init();
 
         if (e == null)
             throw new Error('events cannot be null');
         
         this._finishTextEvent();
 
-        e.questionId ||= coalesce($, 'div.card-header.bg-primary', 0, 'innerText');
+        e.questionId ||= coalesce($, 'div.card-header.bg-primary', 0, 'innerText') || document.title;
         e.time ||= Date.now();
 
-        const mapping = this['map' + e.type];
+        const mapping = this['map_' + e.type];
         if (mapping) {
             e = mapping.call(this, e);
         }
@@ -151,27 +151,26 @@ class Logger {
         try {
             const FStore = Firebase.Firestore;
             const db = Firebase.app.db;
-
-            // const solutionCode = this.widget.solutionCode().map(t => t.replaceAll('\n', ';'));
             
             let docId = window.localStorage.getItem('docId');
 
-            if (docId) {
-                await FStore.updateDoc(FStore.doc(db, "logs", docId), {
+            const rawCommitData = 
+                docId ? {
                     log: FStore.arrayUnion(...this._events),
-                    solutionCode: solutionCode,
-                 });
-            } else {
-                const docRef = await FStore.addDoc(FStore.collection(db, "logs"), {
+                } : {
                     docTitle: document.title,
                     problemHash: this._problemHash,
                     userHash: this._userHash,
                     usernameStr: this._usernameStr,
-                    solutionCode: solutionCode,
                     log: this._events,
-                    sent: Date.now(),
-                });
-
+                    sent: Date.now()
+                };
+            
+            const commitData = this.map_commit ? this.map_commit(rawCommitData) : rawCommitData;
+            if (docId) {
+                await FStore.updateDoc(FStore.doc(db, "logs", docId), commitData);
+            } else {
+                const docRef = await FStore.addDoc(FStore.collection(db, "logs"), commitData);
                 docId = docRef.id;
                 window.localStorage.setItem('docId', docId);
             }
@@ -189,18 +188,20 @@ class ParsonsLogger extends Logger {
         this.widget = widget;
     }
 
-    mapresume(e) { 
-        e.lines = this.widget.modified_lines.map(function (line) {
-            return { id: line.id, code: line.code, indent: line.indent };
-        });
+    _map_reinit(e) {
+        e.lines = this.widget.modified_lines.map(line =>
+            ({ id: line.id, code: line.code, indent: line.indent })
+        );
         return e;
     }
 
-    mapinit(e) { 
-        e.lines = this.widget.modified_lines.map(function (line) {
-            return { id: line.id, code: line.code, indent: line.indent };
-        });
-        return e;
+    map_resume(e) { return this._reinit_mapper(e); }
+
+    map_init(e) { return this._reinit_mapper(e); }
+
+    map_commit(data) {
+        data.solutionCode = this.widget.solutionCode().map(t => t.replaceAll('\n', ';'));
+        return data;
     }
     
     onSubmit() {
