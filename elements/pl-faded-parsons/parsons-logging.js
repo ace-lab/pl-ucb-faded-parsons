@@ -1,28 +1,35 @@
 // https://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
-function hash(s) {
+const hash = s => {
     let hash = 0;
     for (let i = 0; i < s.length; i++) {
-      hash = ((hash << 5) - hash) + s.charCodeAt(i);
-      hash |= 0;
+        hash = ((hash << 5) - hash) + s.charCodeAt(i);
+        hash |= 0;
     }
     return hash;
-}
+};
 
-function coalesce(...args) {
-    let prev = args.shift();
-    for (const curr of args) {
-        if (prev == null) return prev;
-        if (curr == null) return curr;
-
-        prev = typeof(prev) === 'function' ?
-                prev(curr) : prev[curr];
-    }
-    return prev;
-}
+/**
+ * Returns the result of nesting dotting/calling to the args, returning
+ * null early if any intermediate step is null.
+ * 
+ * > let a = { b: { c: 3, f: x => x }};
+ * 
+ * > coalesce(a, 'b', 'c') == 3; // a.b.c
+ * 
+ * > coalesce(a, 'z', 'c') == null; // a.z.c -> z == null!
+ * 
+ * > coalesce([1, a, 3], 1, 'b', 'f', 2) == 2;// [1, a, 3][1].b.f(2)
+ * 
+ * @param  {...any} args properties/args to nesting
+ * @returns a0?[a1]?[a2]?...
+ */
+const coalesce = (...args) =>
+    args.reduce((prev, curr) =>
+        prev == null ? null : 
+            typeof(prev) === 'function' ? prev(curr) : prev[curr]);
 
 class Logger {
-    constructor(widget) {
-        this.widget = widget;
+    constructor() {
         this._events = [];
         this._last_text_event = null;
         this._inited = false;
@@ -67,7 +74,7 @@ class Logger {
         
         this._finishTextEvent();
 
-        e.questionId ||= coalesce($, 'div.card-header.bg-primary', 0, innerText);
+        e.questionId ||= coalesce($, 'div.card-header.bg-primary', 0, 'innerText');
         e.time ||= Date.now();
 
         const mapping = this['map' + e.type];
@@ -145,7 +152,7 @@ class Logger {
             const FStore = Firebase.Firestore;
             const db = Firebase.app.db;
 
-            const solutionCode = this.widget.solutionCode().map(t => t.replaceAll('\n', ';'));
+            // const solutionCode = this.widget.solutionCode().map(t => t.replaceAll('\n', ';'));
             
             let docId = window.localStorage.getItem('docId');
 
@@ -178,7 +185,8 @@ class Logger {
 
 class ParsonsLogger extends Logger {
     constructor(widget) {
-        super(widget);
+        super();
+        this.widget = widget;
     }
 
     mapresume(e) { 
