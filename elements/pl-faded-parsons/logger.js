@@ -3,7 +3,7 @@ const hash = s => {
     let hash = 0;
     for (let i = 0; i < s.length; i++) {
         hash = ((hash << 5) - hash) + s.charCodeAt(i);
-        hash |= 0;
+        hash |= 0; // convert to iu64
     }
     return hash;
 };
@@ -89,15 +89,24 @@ class Logger {
         this.logEvent(e);
     }
 
+    /**
+     * 
+     * @param {*} e 
+     */
     logEvent(e) {
         if (!this._inited) this._init();
 
         if (e == null)
             throw new Error('events cannot be null');
         
+        if (typeof(e.type) !== 'string')
+            throw new Error('events must have a string type')
+        
         this._finishTextEvent();
 
-        e.questionId ||= coalesce($, 'div.card-header.bg-primary', 0, 'innerText') || document.title;
+        e.questionId ||= 
+            coalesce($, 'div.card-header.bg-primary', 0, 'innerText') 
+            || document.title;
         e.time ||= Date.now();
 
         const mapping = this['map_' + e.type];
