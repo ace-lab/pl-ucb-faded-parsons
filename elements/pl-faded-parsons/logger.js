@@ -1,220 +1,279 @@
-// https://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
-const hash = s => {
-    let hash = 0;
-    for (let i = 0; i < s.length; i++) {
-        hash = ((hash << 5) - hash) + s.charCodeAt(i);
-        hash |= 0; // convert to iu64
-    }
-    return hash;
-};
-
-/**
- * Returns the result of nesting dotting/calling to the args, returning
- * null early if any intermediate step is null.
- * 
- * > let a = { b: { c: 3, f: x => 2 * x }};
- * 
- * > coalesce(a, 'b', 'c') == 3; // a.b.c
- * 
- * > coalesce(a, 'z', 'c') == null; // a.z.c -> z == null!
- * 
- * > coalesce([1, a, 3], 1, 'b', 'f', 2) == 4;// [1, a, 3][1].b.f(2)
- * 
- * @param  {...any} args properties/args to nesting
- * @returns a0?[a1]?[a2]?...
- */
-const coalesce = (...args) =>
-    args.reduce((prev, curr) =>
-        prev == null ? prev : 
-            typeof(prev) === 'function' ? prev(curr) : prev[curr]);
-
 /**
  * An extensible logger that tracks events and commits them.
  * Designed specifically to handle text and submission events by default.
- * 
- * 
- * Default captured events can be altered by adding a mapping method 
+ *
+ *
+ * Default captured events can be altered by adding a mapping method
  * corresponding to each type of captured events:
  *      `init`    `resume`    `paste`    `text`    `submit`    `commit`
- * 
- * Extending Logger with a class that has 
+ *
+ * Extending Logger with a class that has functions named
  *      `map_init`  `map_resume`  `map_paste`  `map_text`  `map_submit`  `map_commit`
  * that each take an event and return an event (or null to cancel it) will
  * alter the event before it enters the log.
- * 
- * Custom event types can be trivially created! Just use: 
+ *
+ * Custom event types can be trivially created! Just use:
  * > logEvent({ type: 'myType' })
- * 
+ *
  * This type will also be compatible with the mapping method system, just
  * provide a `map_myType` method!
- * 
+ *
  * Calling commit will cause the Logger to write to a Firebase repository.
  * This requires `Firebase.Firestore` to be the Firestore module, and
  * `Firebase.app.db` to be the current Firebase app's Firestore database.
+ * 
+ * Using this template in your html will do the necessary setup:
+ * ```
+<script type="module">
+    import * as Fb from "https://www.gstatic.com/firebasejs/9.0.2/firebase-app.js";
+    import * as Firestore from "https://www.gstatic.com/firebasejs/9.0.2/firebase-firestore.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = { ... };
+
+    const Firebase = Object.create(Fb);
+    Firebase.Firestore = Firestore;
+    Firebase.app = Firebase.initializeApp(firebaseConfig);
+    Firebase.app.db = Firebase.Firestore.getFirestore(Firebase.app);
+
+    window['Firebase'] = Firebase;
+</script> 
+ * ```
  */
 class Logger {
-    constructor() {
-        this._events = [];
-        this._last_text_event = null;
+  constructor() {
+    this._events = [];
+    this._last_text_event = null;
+  }
+
+  /**
+   * Initializes the Logger with the session data required for committing.
+   */
+  _init() {
+    if (this._inited) return;
+    this._inited = true;
+
+    // TODO: Find a better way to access the username/email of current user
+    const usernameStr = document
+      .getElementById("navbarDropdown")
+      .innerText.trim();
+
+    this._usernameStr = usernameStr;
+    // https://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
+    const hash = (s) => {
+      let hash = 0;
+      for (let i = 0; i < s.length; i++) {
+        hash = (hash << 5) - hash + s.charCodeAt(i);
+        hash |= 0; // convert to iu64
+      }
+      return hash;
+    };
+
+    this._userHash = hash(usernameStr);
+    this._problemHash = hash(document.title);
+
+    this._sessionHash = this._userHash ^ this._problemHash;
+
+    const prevHash = window.localStorage.getItem("sessionHash");
+    const resuming = prevHash && prevHash === "" + this._sessionHash;
+
+    window.localStorage.setItem("sessionHash", this._sessionHash);
+
+    if (!resuming) {
+      window.localStorage.removeItem("docId"); // need a new doc
     }
 
-    _init() {
-        if (this._inited) return;
-        this._inited = true;
+    const e = {
+      type: resuming ? "resume" : "init",
+      problemHash: this._problemHash,
+      userHash: this._userHash,
+      usernameStr: usernameStr,
+    };
 
-        const usernameStr = document.getElementById('navbarDropdown').innerText.trim();
+    this.logEvent(e);
+  }
 
-        this._usernameStr = usernameStr;
-        this._userHash = hash(usernameStr);
-        this._problemHash = hash(document.title);
+  /**
+   * Takes an event { type: string; * }, runs `this['map_' + e.type](e)`,
+   * and adds it to the log if the result is not null or undefined.
+   *
+   * Adds e.time and e.questionId if they are not already provided.
+   * @param {object} e the non-null event to log
+   */
+  logEvent(e) {
+    if (!this._inited) this._init();
 
-        this._sessionHash = this._userHash ^ this._problemHash;
+    if (e == null) throw new Error("events cannot be null");
 
-        const prevHash = window.localStorage.getItem('sessionHash');
-        const resuming = prevHash && prevHash === ("" + this._sessionHash);
-        
-        window.localStorage.setItem('sessionHash', this._sessionHash);
+    if (typeof e.type !== "string")
+      throw new Error("events must have a string type");
 
-        if (!resuming) {
-            window.localStorage.removeItem('docId'); // need a new doc
-        }
+    this._finishTextEvent();
 
-        const e = { 
-            type: resuming ? 'resume' : 'init', 
-            problemHash: this._problemHash, 
-            userHash: this._userHash,
-            usernameStr: usernameStr,
-        };
+    if (!e.questionId) {
+      // TODO: Find a better way to access the name of the question
+      //       this logger's widget is accessing
+      const questionNameClasses = "card-header bg-primary";
+      const elements = document.getElementsByClassName(questionNameClasses);
+      const questionText = elements.length
+        ? elements[0].innerText
+        : document.title;
+      e.questionId = questionText.trim();
+    }
+    e.time ||= Date.now();
 
-        this.logEvent(e);
+    const mapping = this["map_" + e.type];
+    if (mapping) {
+      e = mapping.call(this, e);
     }
 
-    /**
-     * 
-     * @param {*} e 
-     */
-    logEvent(e) {
-        if (!this._inited) this._init();
+    if (e != null) {
+      // mapping may make e null!
+      this._events.push(e);
+    }
+  }
 
-        if (e == null)
-            throw new Error('events cannot be null');
-        
-        if (typeof(e.type) !== 'string')
-            throw new Error('events must have a string type')
-        
+  /**
+   * A callback for catching and combining single edit actions into more cohesive
+   * text events. With the exception of paste events, `event`s raised with the same
+   * `eventId` within `timeout` millis of each other will be combined into a single
+   * edit event.
+   *
+   * Paste events (including drag-and-drops), and events raised with unique `eventId`s
+   * will finish the previous text event, if one exists, before logging their own,
+   * separate event. 
+   * 
+   * (In general, any call to logEvent will cause any incomplete text event to resolve 
+   * before proceeding - ie if `onTextUpdate(x)` is called before `logEvent(e)`, then
+   * the data in `x` will appear before the data in `e` in the log.)
+   *
+   * @see _finishTextEvent for a way to manually end any current text event
+   *
+   * @param {InputEvent} event the original field onInput event
+   * @param {string | number} eventId the id used to unify a series of edits
+   * @param {string} newText the new state of the text field
+   * @param {number?} timeout the timeout for edit actions before logging the aggregate event
+   */
+  onTextUpdate(event, eventId, newText, timeout = 1500) {
+    switch (event.inputType) {
+      case "insertFromPaste":
+      case "insertFromPasteAsQuotation":
+      case "insertFromDrop":
         this._finishTextEvent();
 
-        e.questionId ||= 
-            coalesce($, 'div.card-header.bg-primary', 0, 'innerText') 
-            || document.title;
-        e.time ||= Date.now();
-
-        const mapping = this['map_' + e.type];
-        if (mapping) {
-            e = mapping.call(this, e);
-        }
-
-        if (e != null) { // mapping may make e null!
-            this._events.push(e);
-        }
-    }
-    
-    onTextUpdate(event, eventId, newText) {
-        switch (event.inputType) {
-            case 'insertFromPaste':
-            case 'insertFromPasteAsQuotation':
-            case 'insertFromDrop':
-                this._finishTextEvent();
-
-                const e = {
-                    type: 'paste',
-                    duration: 0,
-                    eventId: eventId,
-                    value: newText,
-                };
-
-                this.logEvent(e);
-                break;
-            case 'deleteByDrag':
-            case 'deleteByCut':
-            // do something special?
-            // right now just continues to default...
-            default: // generic text event
-                if (this._last_text_event) {
-                    // if the last update was to a different field, finish the previous event
-                    // otherwise clear the timeout
-                    if (this._last_text_event.eventId !== eventId) {
-                        this._finishTextEvent();
-                    } else {
-                        clearTimeout(this._last_text_event.timeout);
-                    }
-                }
-
-                this._last_text_event = {
-                    eventId: eventId,
-                    e: event,
-                    start: this._last_text_event ?
-                        this._last_text_event.start : Date.now(),
-                    value: newText,
-                    timeout: setTimeout(() => this._finishTextEvent(), 1000),
-                };
-        }
-    }
-    
-    _finishTextEvent() {
-        if (!this._last_text_event) return;
-
-        clearTimeout(this._last_text_event.timeout);
-
         const e = {
-            type: 'text',
-            time: this._last_text_event.start,
-            duration: Date.now() - this._last_text_event.start,
-            value: this._last_text_event.value,
-            eventId: this._last_text_event.eventId,
+          type: "paste",
+          duration: 0,
+          eventId: eventId,
+          value: newText,
         };
 
-        this._last_text_event = null;
-
         this.logEvent(e);
-    }
-    
-    onSubmit() {
-        this.logEvent({ type: 'submit' });
-        this.commit();
-    }
-    
-    async commit() {
-        try {
-            const FStore = Firebase.Firestore;
-            const db = Firebase.app.db;
-            
-            let docId = window.localStorage.getItem('docId');
-
-            const rawCommitData = 
-                docId ? {
-                    log: FStore.arrayUnion(...this._events),
-                } : {
-                    docTitle: document.title,
-                    problemHash: this._problemHash,
-                    userHash: this._userHash,
-                    usernameStr: this._usernameStr,
-                    log: this._events,
-                    sent: Date.now()
-                };
-            
-            const commitData = this.map_commit ? this.map_commit(rawCommitData) : rawCommitData;
-            if (docId) {
-                await FStore.updateDoc(FStore.doc(db, "logs", docId), commitData);
-            } else {
-                const docRef = await FStore.addDoc(FStore.collection(db, "logs"), commitData);
-                docId = docRef.id;
-                window.localStorage.setItem('docId', docId);
-            }
-            
-            console.log("Document written with ID: ", docId);
-        } catch (e) {
-            alert("Error adding document:\n" + e.toString());
+        break;
+      case "deleteByDrag":
+      case "deleteByCut":
+      // do something special?
+      // right now just continues to default...
+      default:
+        if (this._last_text_event) {
+          // if the last update was to a different field, finish the previous event
+          // otherwise clear the timeout
+          if (this._last_text_event.eventId !== eventId) {
+            this._finishTextEvent();
+          } else {
+            clearTimeout(this._last_text_event.timeout);
+          }
         }
+
+        this._last_text_event = {
+          eventId: eventId,
+          e: event,
+          start: this._last_text_event
+            ? this._last_text_event.start
+            : Date.now(),
+          value: newText,
+          timeout: setTimeout(() => this._finishTextEvent(), timeout),
+        };
     }
+  }
+
+  /**
+   * Finishes any text event that is still in progress and logs it.
+   */
+  _finishTextEvent() {
+    if (!this._last_text_event) return;
+
+    clearTimeout(this._last_text_event.timeout);
+
+    const e = {
+      type: "text",
+      time: this._last_text_event.start,
+      value: this._last_text_event.value,
+      eventId: this._last_text_event.eventId,
+    };
+
+    // critical! Infinite-mutual-recursion if 
+    // this field is not cleared before logEvent is called
+    this._last_text_event = null;
+
+    this.logEvent(e);
+  }
+
+  /**
+   * A callback for when a submit button is pressed.
+   * Logs a new submit event, and commits the log.
+   */
+  onSubmit() {
+    this.logEvent({ type: "submit" });
+    this.commit();
+  }
+
+  /**
+   * Commits to the environments Firestore database. Requires 
+   * `window.Firebase.Firestore` to be the Firestore module, and
+   * `window.Firebase.app.db` to be the current Firebase app's  
+   * Firestore database.
+   */
+  async commit() {
+    try {
+      const FStore = Firebase.Firestore;
+      const db = Firebase.app.db;
+
+      let docId = window.localStorage.getItem("docId");
+
+      const rawCommitData = docId
+        ? {
+            log: FStore.arrayUnion(...this._events),
+          }
+        : {
+            docTitle: document.title,
+            problemHash: this._problemHash,
+            userHash: this._userHash,
+            usernameStr: this._usernameStr,
+            log: this._events,
+            sent: Date.now(),
+          };
+
+      const commitData = this.map_commit
+        ? this.map_commit(rawCommitData)
+        : rawCommitData;
+    
+      if (docId) {
+        await FStore.updateDoc(FStore.doc(db, "logs", docId), commitData);
+      } else {
+        const docRef = await FStore.addDoc(
+          FStore.collection(db, "logs"),
+          commitData
+        );
+        docId = docRef.id;
+        window.localStorage.setItem("docId", docId);
+      }
+
+      console.log("Document written with ID: ", docId);
+      // clear committed events so they do not get commited twice!
+      this._events = [];
+    } catch (e) {
+      alert("Error adding document:\n" + e.toString());
+    }
+  }
 }
