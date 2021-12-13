@@ -136,10 +136,10 @@ class Logger {
   /**
    * A callback for catching and combining single edit actions into more cohesive
    * text events. With the exception of paste events, `event`s raised with the same
-   * `eventId` within `timeout` millis of each other will be combined into a single
+   * `batchId` within `timeout` millis of each other will be combined into a single
    * edit event.
    *
-   * Paste events (including drag-and-drops), and events raised with unique `eventId`s
+   * Paste events (including drag-and-drops), and events raised with unique `batchId`s
    * will finish the previous text event, if one exists, before logging their own,
    * separate event. 
    * 
@@ -150,35 +150,33 @@ class Logger {
    * @see _finishTextEvent for a way to manually end any current text event
    *
    * @param {InputEvent} event the original field onInput event
-   * @param {string | number} eventId the id used to unify a series of edits
+   * @param {(string | number)?} batchId the id used to unify a series of edits (null if force no batch)
    * @param {string} newText the new state of the text field
    * @param {number?} timeout the timeout for edit actions before logging the aggregate event
    */
-  onTextUpdate(event, eventId, newText, timeout = 1500) {
+  onTextUpdate(event, batchId, newText, timeout = 1500) {
     switch (event.inputType) {
       case "insertFromPaste":
       case "insertFromPasteAsQuotation":
       case "insertFromDrop":
-        this._finishTextEvent();
-
-        const e = {
+        // calls this._finishTextEvent() first
+        this.logEvent({
           type: "paste",
           duration: 0,
-          eventId: eventId,
+          batchId: batchId,
           value: newText,
-        };
-
-        this.logEvent(e);
+        });
         break;
-      case "deleteByDrag":
-      case "deleteByCut":
-      // do something special?
-      // right now just continues to default...
+      // do something special with these?
+      // case "deleteByDrag":
+      // case "deleteByCut":
       default:
+        const noBatch = batchId == null;
+
         if (this._last_text_event) {
           // if the last update was to a different field, finish the previous event
           // otherwise clear the timeout
-          if (this._last_text_event.eventId !== eventId) {
+          if (noBatch || this._last_text_event.batchId !== batchId) {
             this._finishTextEvent();
           } else {
             clearTimeout(this._last_text_event.timeout);
@@ -186,7 +184,7 @@ class Logger {
         }
 
         this._last_text_event = {
-          eventId: eventId,
+          batchId: batchId,
           e: event,
           start: this._last_text_event
             ? this._last_text_event.start
@@ -194,6 +192,8 @@ class Logger {
           value: newText,
           timeout: setTimeout(() => this._finishTextEvent(), timeout),
         };
+
+        if (noBatch) this._finishTextEvent();
     }
   }
 
@@ -209,7 +209,7 @@ class Logger {
       type: "text",
       time: this._last_text_event.start,
       value: this._last_text_event.value,
-      eventId: this._last_text_event.eventId,
+      batchId: this._last_text_event.batchId,
     };
 
     // critical! Infinite-mutual-recursion if 
@@ -235,10 +235,16 @@ class Logger {
    * Firestore database.
    */
   async commit() {
-    try {
-      const FStore = Firebase.Firestore;
-      const db = Firebase.app.db;
+    var FStore, db;
+    try { 
+      FStore = Firebase.Firestore;
+      db = Firebase.app.db;
+    } catch (e) {
+      alert("Firestore not configured. Commit aborted!");
+      return;
+    }
 
+    try {
       let docId = window.localStorage.getItem("docId");
 
       const rawCommitData = docId
