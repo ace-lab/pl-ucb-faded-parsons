@@ -227,6 +227,15 @@ class Logger {
     this.logEvent({ type: "submit" });
     this.commit();
   }
+  
+  /**
+   * JSONifies the current event log
+   * @returns JSON string of the event log
+   */
+  dumpLog() {
+    this._init();
+    return JSON.stringify(this._events);
+  }
 
   /**
    * Commits to the environments Firestore database. Requires 
