@@ -107,7 +107,7 @@ class Logger {
    */
   _deinit() {
     if (!this._inited) return;
-    
+
     this._finishTextEvent();
     this._last_text_event = null;
 
@@ -268,16 +268,19 @@ class Logger {
    * `window.Firebase.Firestore` to be the Firestore module, and
    * `window.Firebase.app.db` to be the current Firebase app's  
    * Firestore database.
+   * @param {boolean?} silent if true, no logging or alerting (even on failure)
+   * @returns {boolean} true if wrote to firestore, false if entered recovery and
+   * wrote to localStorage
    */
-  async commit() {
+  async commit(silent=false) {
     var FStore, db;
     try { 
       FStore = Firebase.Firestore;
       db = Firebase.app.db;
     } catch (e) {
       this._deinit();
-      alert("Firestore not configured. Commit aborted!");
-      return;
+      silent || alert("Firestore not configured. Commit aborted!");
+      return false;
     }
 
     try {
@@ -311,12 +314,15 @@ class Logger {
         window.localStorage.setItem("docId", docId);
       }
 
-      console.log("Document written with ID: ", docId);
+      silent || console.log("Document written with ID: ", docId);
       // clear committed events so they do not get commited twice!
       this._events = [];
     } catch (e) {
       this._deinit();
-      alert("Error adding document:\n" + e.toString());
+      silent || alert("Error adding document:\n" + e.toString());
+      return false;
     }
+    
+    return true;
   }
 }
