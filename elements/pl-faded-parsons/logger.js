@@ -75,12 +75,18 @@ class Logger {
     this._sessionHash = this._userHash ^ this._problemHash;
 
     const prevHash = window.localStorage.getItem("sessionHash");
+    const recovering = window.localStorage.getItem("recovery");
     const resuming = prevHash && prevHash === "" + this._sessionHash;
 
     window.localStorage.setItem("sessionHash", this._sessionHash);
 
     if (!resuming) {
       window.localStorage.removeItem("docId"); // need a new doc
+    }
+
+    if (recovering) {
+      this._events = JSON.parse(recovering);
+      window.localStorage.removeItem("recovery");
     }
 
     const e = {
@@ -91,6 +97,8 @@ class Logger {
     };
 
     this.logEvent(e);
+
+    window.addEventListener("beforeunload", () => this.commit());
   }
 
   /**
@@ -250,6 +258,10 @@ class Logger {
       db = Firebase.app.db;
     } catch (e) {
       alert("Firestore not configured. Commit aborted!");
+      if (this._events && this._events.length) {
+        window.localStorage.setItem('recovery', this.dumpLog());
+        this._events = [];
+      }
       return;
     }
 
