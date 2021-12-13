@@ -47,7 +47,8 @@ class Logger {
   }
 
   /**
-   * Initializes the Logger with the session data required for committing.
+   * Initializes the Logger with the session data required for committing,
+   * exiting recovery mode if necessary.
    */
   _init() {
     if (this._inited) return;
@@ -99,6 +100,23 @@ class Logger {
     this.logEvent(e);
 
     window.addEventListener("beforeunload", () => this.commit());
+  }
+
+  /**
+   * Puts the logger into recovery mode, and uninitializes all fields.
+   */
+  _deinit() {
+    if (!this._inited) return;
+    
+    this._finishTextEvent();
+    this._last_text_event = null;
+
+    if (this._events && this._events.length) {
+      window.localStorage.setItem('recovery', this.dumpLog());
+      this._events = [];
+    }
+    
+    this._inited = false;
   }
 
   /**
@@ -257,11 +275,8 @@ class Logger {
       FStore = Firebase.Firestore;
       db = Firebase.app.db;
     } catch (e) {
+      this._deinit();
       alert("Firestore not configured. Commit aborted!");
-      if (this._events && this._events.length) {
-        window.localStorage.setItem('recovery', this.dumpLog());
-        this._events = [];
-      }
       return;
     }
 
@@ -300,6 +315,7 @@ class Logger {
       // clear committed events so they do not get commited twice!
       this._events = [];
     } catch (e) {
+      this._deinit();
       alert("Error adding document:\n" + e.toString());
     }
   }
