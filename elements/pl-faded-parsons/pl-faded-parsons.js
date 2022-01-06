@@ -1,6 +1,7 @@
 /* eslint-env jquery, browser */
 
-var ParsonsGlobal = {
+const ParsonsGlobal = {
+  makeLogger: true,
   logger: null,
   widget: null,
   /*
@@ -47,7 +48,7 @@ var ParsonsGlobal = {
         ParsonsGlobal.logger && ParsonsGlobal.logger.onSortableUpdate(event, ui);
       },
       'onBlankUpdate': (event, codeline) => {
-        ParsonsGlobal.logger && ParsonsGlobal.logger.onBlankUpdate(event, codeline);
+        ParsonsGlobal.logger && ParsonsGlobal.logger.onTextUpdate(event, codeline);
       },
       'trashId': 'starter-code',
       'max_wrong_lines': 1,
@@ -62,7 +63,7 @@ var ParsonsGlobal = {
     // when form submitted, grab the student work and put it into hidden form fields
     $('form.question-form').submit(ParsonsGlobal.submitHandler);
 
-    if ((typeof ParsonsLogger !== 'undefined') && !ParsonsGlobal.logger) {
+    if (ParsonsGlobal.makeLogger && (typeof ParsonsLogger !== 'undefined') && !ParsonsGlobal.logger) {
       ParsonsGlobal.logger = new ParsonsLogger(ParsonsGlobal.widget);
     }
   }
