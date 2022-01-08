@@ -20,6 +20,7 @@ def is_sublist(list, sublist): #0given
     return False #1given
 
 ## test ##
+# this content could be generated using sublist_test.json
 from pl_helpers import name, points
 from pl_unit_test import PLTestCase
 from code_feedback import Feedback
