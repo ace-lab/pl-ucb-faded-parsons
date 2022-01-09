@@ -2,12 +2,12 @@ from pl_helpers import name, points
 from pl_unit_test import PLTestCase
 from code_feedback import Feedback
 
-def score_cases(student_fn, ref_fn, *cases):
+def score_cases(student_fn, ref_fn, *cases, show_feedback=True):
     proportion_correct = 0
     for case in cases:
         user_val = Feedback.call_user(student_fn, *case)
         ref_val = ref_fn(*case)
-        if Feedback.check_scalar(f"args: {case}", ref_val, user_val):
+        if Feedback.check_scalar(f"args: {case}", ref_val, user_val, report_success=show_feedback, report_failure=show_feedback):
             proportion_correct += 1
     proportion_correct /= len(cases)
 
@@ -32,4 +32,4 @@ class Test(PLTestCase):
             ([1, 2, 3, 4], []),
             ([1, 2, 3, 4], [1, 2, 3, 4]),
             ([1, 2, 3, 4], [1, 2, 3, 4, 5]),
-        )
+        show_feedback=False)
