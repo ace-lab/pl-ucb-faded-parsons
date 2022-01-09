@@ -60,9 +60,12 @@ def render_question_panel(element_html, data):
     for blank in data['submitted_answers']:
         if blank[0:24] == 'parsons-solutioncodeline':
             populate_info.append({'name': blank, 'value': data['submitted_answers'][blank]})
-
-    student_order_info = json.loads(data['submitted_answers']['starter-code-order']) if 'starter-code-order' in data['submitted_answers'] else []
-    solution_order_info = json.loads(data['submitted_answers']['parsons-solution-order']) if 'parsons-solution-order' in data['submitted_answers'] else []
+    try:
+        student_order_info = json.loads(data['submitted_answers']['starter-code-order']) if 'starter-code-order' in data['submitted_answers'] else []
+        solution_order_info = json.loads(data['submitted_answers']['parsons-solution-order']) if 'parsons-solution-order' in data['submitted_answers'] else []
+    except:
+        student_order_info = []
+        solution_order_info = []
 
     html_params = {
         "code_lines":  str(element.text),

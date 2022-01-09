@@ -29,7 +29,7 @@
     Firebase.app = Firebase.initializeApp(firebaseConfig);
     Firebase.app.db = Firebase.Firestore.getFirestore(Firebase.app);
     window['Firebase'] = Firebase;
-</script> 
+</script>
 
 {{! hidden form field that will be filled with student response right before submit; we have to capture the state of both the 'starter code' box and the 'solution' box}}
 
@@ -50,6 +50,30 @@
 </div>
 
 <script>
+  function allBlanksFilled(e){
+    var solutionInputs = $("#ul-parsons-solution li input");
+    all_filled = true;
+    for (const input of solutionInputs){
+      if (input.value == null || input.value == "") all_filled = false;
+    }
+    if (!all_filled){
+      if (!window.confirm("You have an unfilled blank in your solution. Are you sure you want to submit?")){
+        e.preventDefault();
+        location.reload();
+        return false;
+      }
+    }
+    return true;
+  }
+  //not sure why it defaults to disabling
+  //console.log($('.disable-on-submit'))
+  //$('.disable-on-submit').removeClass('disabled-on-submit');
+
+  // validate if all blanks filled in
+  $('form.question-form').submit(function (e) {
+    allBlanksFilled(e)
+  });
+
   var populateCheck = setInterval(function() {
     {{#populate_info}}
     var exists = document.forms['question-form']['{{name}}'];
