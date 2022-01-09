@@ -7,7 +7,7 @@ def score_cases(student_fn, ref_fn, *cases):
     for case in cases:
         user_val = Feedback.call_user(student_fn, *case)
         ref_val = ref_fn(*case)
-        if user_val == ref_val:
+        if Feedback.check_scalar(f"args: {case}", ref_val, user_val):
             proportion_correct += 1
     proportion_correct /= len(cases)
 
@@ -22,7 +22,7 @@ class Test(PLTestCase):
             ([1, 2, 3, 4], [4, 3])
         )
 
-    
+
     @points(8)
     @name("advanced cases")
     def test_1(self):
