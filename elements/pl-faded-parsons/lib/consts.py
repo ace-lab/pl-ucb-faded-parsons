@@ -3,21 +3,22 @@ from typing import *
 from os.path import join
 from re import compile, Pattern
 
+
 class Bcolors:
     # https://stackoverflow.com/questions/287871/how-to-print-colored-text-to-the-terminal
     HEADER: Final[str] = '\033[95m'
-    OKBLUE: Final[str] = '\033[94m'
-    OKCYAN: Final[str] = '\033[96m'
-    OKGREEN: Final[str] = '\033[92m'
+    OK_BLUE: Final[str] = '\033[94m'
+    OK_CYAN: Final[str] = '\033[96m'
+    OK_GREEN: Final[str] = '\033[92m'
     WARNING: Final[str] = '\033[93m'
     FAIL: Final[str] = '\033[91m'
-    ENDC: Final[str] = '\033[0m'
+    END_COLOR: Final[str] = '\033[0m'
     BOLD: Final[str] = '\033[1m'
     UNDERLINE: Final[str] = '\033[4m'
 
     @staticmethod
     def f(color: str, *args, sep=' '):
-        return color + sep.join(map(str, args)) + Bcolors.ENDC
+        return color + sep.join(map(str, args)) + Bcolors.END_COLOR
 
     @staticmethod
     def printf(color: str, *args, **kwargs):
@@ -28,12 +29,20 @@ class Bcolors:
         print(Bcolors.f(color, *args, sep=sep), **kwargs)
 
     @staticmethod
+    def ok(*args, **kwargs):
+        Bcolors.printf(Bcolors.OK_GREEN, *args, **kwargs)
+
+    @staticmethod
     def warn(*args, **kwargs):
         Bcolors.printf(Bcolors.WARNING, *args, **kwargs)
 
     @staticmethod
     def fail(*args, **kwargs):
         Bcolors.printf(Bcolors.FAIL, *args, **kwargs)
+
+    @staticmethod
+    def info(*args, **kwargs):
+        Bcolors.printf(Bcolors.OK_BLUE, *args, **kwargs)
 
 
 TEST_DEFAULT: Final[str] = """# AUTO-GENERATED FILE
@@ -73,7 +82,7 @@ SERVER_DEFAULT: Final[str] = """# AUTO-GENERATED FILE
 def generate(data):
     # Define incoming variables here
     names_for_user = [
-        # ex: student recieves a matrix m
+        # ex: student receives a matrix m
         # {"name": "m", "description": "a 2x2 matrix", "type": "numpy array"}
     ]
     # Define outgoing variables here
@@ -95,39 +104,35 @@ MAIN_PATTERN: Final[Pattern] = compile(
     #                    and if the next line doesn't have a region comment,
     #                    it consumes the trailing newline as well.
     r'(?:\r?\n|^)[ \t]*\#\#[\t ]*(.*?)\s*\#\#.*?(?:(?=\r?\n[ \t]*\#\#)|\r?\n|$)|' +
-    # - capture group 1:  (one-line) comment, up to next comment or newline 
+    # - capture group 1:  (one-line) comment, up to next comment or newline
     #                     (excluding the newline/eof)
     r'(\#.*?)(?=\#|\r?\n|$)|' +
     # - capture group 2: (multi-line) triple-quote string literal
-    r'(\"\"\"[\s\S]*?\"\"\")|' + 
+    r'(\"\"\"[\s\S]*?\"\"\")|' +
     # - capture group 3:
     #     - (one-line) single-apostrophe string literal
     #     - (one-line) single-quote string literal
-    r'(\'.*?\'|\".*?\")|' + 
+    r'(\'.*?\'|\".*?\")|' +
     # - capture group 4:  (one-line) answer surrounded by ?'s (excluding ?'s)
     r'\?(.*?)\?'
 )
 
-SPECIAL_COMMENT_PATTERN: Final[Pattern] = compile(r'^#(blank[^#]*|\d+given)\s*')
+SPECIAL_COMMENT_PATTERN: Final[Pattern] = compile(
+    r'^#(blank[^#]*|\d+given)\s*'
+)
 
 BLANK_SUBSTITUTE: Final[str] = '!BLANK'
 
-SPECIAL_REGIONS: Final[str] = {
-    'setup': join('test', 'setup_code.py'),
-    'setup_code': join('test', 'setup_code.py'),
-    'ans': join('test', 'ans.py'),
-    'answer': join('test', 'ans.py'),
-    'answer_code': join('test', 'ans.py'),
-    'question': 'question_text',
-    'question_code': 'question_text'
-}
+REGION_IMPORT_PATTERN: Final[Pattern] = compile(
+    r'^\s*import\s*(\w.*)\s+as\s+(\w.*?)\s*$'
+)
 
-PROGRAM_DESCRIPTION: Final[str] = Bcolors.f(Bcolors.OKGREEN, ' A tool for generating faded parsons problems.') + """
+PROGRAM_DESCRIPTION: Final[str] = Bcolors.f(Bcolors.OK_GREEN, ' A tool for generating faded parsons problems.') + """
 
  Provide the path to well-formatted python file(s), and a question template will be generated.
  This tool will search for a path in ./ questions/ ../../questions/ and ../../ before erring.
  If none is provided, it will hunt for a questions directory, and use all .py files there.
- """ + Bcolors.f(Bcolors.OKBLUE, 'Formatting rules:') + """
+ """ + Bcolors.f(Bcolors.OK_BLUE, 'Formatting rules:') + """
  - If the file begins with a docstring, it will become the question text
      - The question text is removed from the answer
      - Docstrings are always removed from the prompt
@@ -148,4 +153,8 @@ PROGRAM_DESCRIPTION: Final[str] = Bcolors.f(Bcolors.OKGREEN, ' A tool for genera
      - Code in `setup_code` will be parsed to extract exposed names unless the --no-parse
        flag is set. Type annotations and function docstrings are used to fill out server.py
      - Any custom region that clashes with an automatically generated file name
-       will overwrite the automatically generated code"""
+       will overwrite the automatically generated code
+ - Import regions allow for the contents of arbitrary files to be loaded as regions
+     - They are formatted as `## import {rel_file_path} as {region name} ##`
+        where `rel_file_path` is the relative path to the file from the source file
+     - Like regular regions, they cannot be used inside of another region"""

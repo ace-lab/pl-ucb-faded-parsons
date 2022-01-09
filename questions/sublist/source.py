@@ -1,4 +1,4 @@
-""" Make a function <code>is_sublist</code> that checks wether the first
+""" Make a function <code>is_sublist</code> that checks whether the first
     argument contains the second as a sublist (including ordering), eg
 
     <pl-code language="python">
@@ -9,28 +9,41 @@
 """
 
 def is_sublist(list, sublist): #0given
-    n, m = len(list), len(sublist)
+    n, m = len(list), len(sublist) #1given
+    # we only want to search to the last place
+    # where the sublist could occur (n - m - 1)
     for i in range(?n - m?):
         start, end = i, i + m
+        # compare to the slice of len m at i
         if list[?start:end?] == sublist: #blank _:_
-            return ?True?
+            return ?True? # return early!
     return False #1given
 
 ## test ##
+# this content could be generated using sublist_test.json
 from pl_helpers import name, points
 from pl_unit_test import PLTestCase
 from code_feedback import Feedback
 
+
 def score_cases(student_fn, ref_fn, *cases):
-    proportion_correct = 0
+    """ Compares the results of `student_fn` to `ref_fn` over each case,
+        and sets the feedback score to the ratio of cases that had the
+        correct result over the total number of cases
+    """
+    correct = 0
     for case in cases:
         user_val = Feedback.call_user(student_fn, *case)
         ref_val = ref_fn(*case)
         if user_val == ref_val:
-            proportion_correct += 1
-    proportion_correct /= len(cases)
+            correct += 1
+    
+    # set_score must be in range 0.0 to 1.0
+    if cases:
+        Feedback.set_score(correct / len(cases))
+    else:
+        Feedback.set_score(1.0)
 
-    Feedback.set_score(proportion_correct)
 
 class Test(PLTestCase):
     @points(2)
