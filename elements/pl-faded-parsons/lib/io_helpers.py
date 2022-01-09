@@ -48,11 +48,12 @@ def read_region_source_lines(source_path: str, region_source: str) -> str:
         return ''.join(f.readlines())
 
 
-def auto_detect_sources() -> list[PathLike[AnyStr]]:
-    Bcolors.warn('** No paths provided, auto-detecting questions directory **')
+def auto_detect_sources(questions_dir: Optional[PathLike[AnyStr]] = None) -> list[PathLike[AnyStr]]:
+    if not questions_dir:
+        Bcolors.warn('** No paths provided, auto-detecting questions directory **')
 
     try:
-        questions_dir = resolve_path(
+        questions_dir = questions_dir or resolve_path(
             'questions', path_is_dir=True, silent=True)
     except FileNotFoundError as e:
         Bcolors.fail(
@@ -61,7 +62,8 @@ def auto_detect_sources() -> list[PathLike[AnyStr]]:
             Bcolors.fail(*e.args)
 
     resolve = partial(join, questions_dir)
-    def is_valid(f): return isfile(f) and file_ext(f).endswith('py')
+    def is_valid(f): 
+        return isfile(f) and file_ext(f).endswith('py')
     return list(filter(is_valid, map(resolve, listdir(questions_dir))))
 
 
@@ -138,6 +140,8 @@ def parse_args(arg_text: str = None) -> Namespace:
                         help='prevents the code from being parsed by py.ast to derive content')
 
     parser.add_argument('source_path', action='append', nargs='*')
+    parser.add_argument('--questions-dir', action='append', metavar='path',
+                        help='target all .py files in directory as sources')
     parser.add_argument('--force-json', action='append', metavar='path',
                         help='will overwrite the question\'s info.json file with auto-generated content')
 
@@ -147,6 +151,11 @@ def parse_args(arg_text: str = None) -> Namespace:
     # unpack weird nesting, delete confusing name
     ns.source_paths = [p for l in ns.source_path for p in l]
     del ns.source_path
+
+    if ns.questions_dir:
+        for qd in ns.questions_dir:
+            ns.source_paths.extend(auto_detect_sources(qd))
+        del ns.questions_dir
 
     ns.force_json = ns.force_json or list()
     return ns
