@@ -274,7 +274,7 @@ def square_color(pos): #0given
 # tests down here ...
 ```
 
-### Import Regions
+### Import Regions and Custom Regions
 
 Note that is possible to direct imports at previously generated files to effectively prevent the tool from over-writing data, eg
 
