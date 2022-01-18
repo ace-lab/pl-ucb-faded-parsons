@@ -37,8 +37,8 @@ It turns 0..8 into (0, 1 , 2) repeating!
 <!-- see README for where the various parts of question live -->
 <pl-faded-parsons>
   def square_color(pos): #0given
-  file, rank = to_coordinates(pos)
-  black_first_square = file % !BLANK == 0
-  same_as_first = rank % !BLANK == 0
-  return black_first_square == same_as_first
+      file, rank = to_coordinates(pos)
+      black_first_square = file % !BLANK == 0
+      same_as_first = rank % !BLANK == 0
+      return black_first_square == same_as_first
 </pl-faded-parsons>

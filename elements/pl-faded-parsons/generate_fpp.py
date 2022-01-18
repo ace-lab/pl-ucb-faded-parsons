@@ -180,11 +180,11 @@ def extract_regions(
 
     # remove all whitespace-only lines
     # usually as a result of removing comments
-    # then remove all indentation and leading ws
+    # then remove trailing ws
     regions['prompt_code'] = '\n'.join(
-        filter(bool, map(str.strip, regions['prompt_code'].splitlines())))
+        filter(bool, map(str.rstrip, regions['prompt_code'].splitlines())))
     # remove trailing ws on each line,
-    # then remove leading ws
+    # then remove trailing ws
     regions['answer_code'] = '\n'.join(
         map(str.rstrip, regions['answer_code'].splitlines())
     ).lstrip()
