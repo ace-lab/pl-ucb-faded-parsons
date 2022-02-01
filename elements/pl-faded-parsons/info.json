@@ -8,8 +8,6 @@
       "underscore-min.js",
       "lis.js",
       "parsons.js",
-      "logger.js",
-      "parsons-logger.js",
       "pl-faded-parsons.js"
     ],
     "elementStyles": [

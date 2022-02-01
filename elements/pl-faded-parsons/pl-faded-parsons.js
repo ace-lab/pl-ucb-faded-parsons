@@ -1,8 +1,6 @@
 /* eslint-env jquery, browser */
 
 const ParsonsGlobal = {
-  makeLogger: true,
-  logger: null,
   widget: null,
   /*
    * When form is submitted, capture the state of the student's solution.
@@ -27,8 +25,6 @@ const ParsonsGlobal = {
     });
     $('#parsons-solution-order').val(JSON.stringify(solutionElements));
     $('#student-parsons-solution').val(ParsonsGlobal.widget.solutionCode()[0]);
-
-    ParsonsGlobal.logger && ParsonsGlobal.logger.onSubmit();
   },
 
   /* When blanks are filled in adjust their length */
@@ -44,12 +40,6 @@ const ParsonsGlobal = {
   setup: function() {
     ParsonsGlobal.widget = new ParsonsWidget({
       'sortableId': 'parsons-solution',
-      'onSortableUpdate': (event, ui) => {
-        ParsonsGlobal.logger && ParsonsGlobal.logger.onSortableUpdate(event, ui);
-      },
-      'onBlankUpdate': (event, codeline) => {
-        ParsonsGlobal.logger && ParsonsGlobal.logger.onTextUpdate(event, codeline);
-      },
       'trashId': 'starter-code',
       'max_wrong_lines': 1,
       'syntax_language': 'lang-py' // lang-rb and other choices also acceptable
@@ -62,10 +52,6 @@ const ParsonsGlobal = {
     $('input.text-box').on('input', ParsonsGlobal.adjustBlankWidth);
     // when form submitted, grab the student work and put it into hidden form fields
     $('form.question-form').submit(ParsonsGlobal.submitHandler);
-
-    if (ParsonsGlobal.makeLogger && (typeof ParsonsLogger !== 'undefined') && !ParsonsGlobal.logger) {
-      ParsonsGlobal.logger = new ParsonsLogger(ParsonsGlobal.widget);
-    }
   }
 }
 
