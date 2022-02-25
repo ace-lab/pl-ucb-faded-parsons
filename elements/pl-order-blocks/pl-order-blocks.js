@@ -56,7 +56,8 @@ window.PLOrderBlocks = function (uuid, options) {
     return leftDiff;
   }
 
-  let sortables = optionsElementId + ', ' + dropzoneElementId;
+  const sortableIds = [optionsElementId, dropzoneElementId];
+  const sortables = sortableIds.join(', ');
   $(sortables).sortable({
     items: 'li:not(.info-fixed)',
     // don't start a move if click begins on the
@@ -84,5 +85,11 @@ window.PLOrderBlocks = function (uuid, options) {
   if (enableIndentation) {
     $(dropzoneElementId).sortable('option', 'grid', [TABWIDTH, 1]);
   }
+
+  const sortableTextInputs = sortableIds.map(id => id + ' input').join(', ');
+  $(sortableTextInputs).on('input', function(e) {
+    $(e.target).width(e.target.value.length.toString() + 'ch');
+  });
+
   $('[data-toggle="popover"]').popover();
 };

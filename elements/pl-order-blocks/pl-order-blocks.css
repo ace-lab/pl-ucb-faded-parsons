@@ -20,6 +20,25 @@ ul.pl-order-blocks-connected-sortable li:hover{
   outline-offset: -2px;
 }
 
+/** For input within pl-answer, must be monospace */
+ul.pl-order-blocks-connected-sortable {
+  font-size: smaller;
+  font-family: monospace;
+  list-style: none;
+}
+
+/** For input within pl-answer */
+input.pl-order-text-box {
+  border-width: 0px;
+  border-bottom: solid 1px black;
+  width: 3em;
+  min-width:2em;
+  max-width: -webkit-fill-available; /* not availiable on IE, but overflow ok. */
+  padding: 5px;
+  font-family: monospace;
+  background-color: #EFEFEF;
+}
+
 li.ui-state-highlight { 
   /*This styling applies to the placeholder answer tile that appears when the user is dragging */
   height: 3em !important; 
