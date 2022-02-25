@@ -59,7 +59,9 @@ window.PLOrderBlocks = function (uuid, options) {
   let sortables = optionsElementId + ', ' + dropzoneElementId;
   $(sortables).sortable({
     items: 'li:not(.info-fixed)',
-    cancel: '.info',
+    // don't start a move if click begins on the
+    // defaults from jquery documentation and .info
+    cancel: 'input,textarea,button,select,option,.info',
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
     create: function (event) {
