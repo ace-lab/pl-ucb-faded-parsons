@@ -8,8 +8,28 @@
 
 <input id="{{answers_name}}code-lines" type="hidden" value="{{{code_lines}}}"/>
 
-{{! the side by side boxes, starter code on left, solution area on right }}
+{{! the boxes for starter code and solution area}}
+
+{{^vertical}}
+{{! if not vertical (horizontal), keep half size boxes }}
 <div class="pl-faded-parsons row">
   <div id="{{answers_name}}starter-code"     class="col-sm-6 border px-1 sortable-code"></div>
   <div id="{{answers_name}}parsons-solution" class="col-sm-6 border sortable-code"></div>
 </div>
+{{/vertical}}
+
+
+{{! if vertical, full size boxes }}
+{{! IMPORTANT NOTE: these references to `answers_name` will not dereference since they are not 
+    part of the `vertical` dictionary passed to the rendering method }}
+{{#vertical}}
+<div class="pl-faded-parsons row">
+  <div id="{{answers_name}}starter-code"     class="col-sm-12 border px-1 sortable-code"></div>
+  
+  {{{pre_text}}}
+  
+  <div id="{{answers_name}}parsons-solution" class="col-sm-12 sortable-code"></div>
+
+  {{{post_text}}}
+</div>
+{{/vertical}}

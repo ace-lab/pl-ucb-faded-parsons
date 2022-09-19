@@ -3,6 +3,8 @@ import lxml.html as xml
 import random
 import chevron
 import os
+import pygments
+import html
 
 QUESTION_CODE_FILE     = 'code_lines.py'
 SOLUTION_CODE_FILE    = 'solution.py'
@@ -42,6 +44,7 @@ def get_student_code(element_html, data):
     element = xml.fragment_fromstring(element_html)
     answers_name = get_answers_name(element_html)
     student_code = data['submitted_answers'].get(answers_name + 'student-parsons-solution', None)
+    return student_code
 
 
 def render_question_panel(element_html, data):
@@ -50,6 +53,77 @@ def render_question_panel(element_html, data):
         "code_lines":  read_file_lines(data, QUESTION_CODE_FILE),
         "answers_name": get_answers_name(element_html)
     }
+
+    element = xml.fragment_fromstring(element_html)
+    if pl.get_string_attrib(element, "format", "") == "vertical": 
+        def get_child_contents_bytag(element, tag: str) -> str:
+            """get the innerHTML of the first child of `element` that has the tag `tag`
+            default value is empty string"""
+            match = next( filter( lambda elem: elem.tag == tag, element ), None )
+            if match is None:
+                return ""
+            return match.text
+
+        pre_text = get_child_contents_bytag(element, "pre-text")
+        post_text = get_child_contents_bytag(element, "post-text")
+
+        lang = pl.get_string_attrib(element, "language", None)
+        def format_code(raw_code: str) -> str:
+            # this method's code is shamelessly ripped from the code for the `pl-code` element as 
+            #   of 16 Aug 2022
+            code = raw_code[:]
+            code = code.rstrip()
+
+            if lang is not None:
+                lexer_class = pygments.lexers.find_lexer_class(lang)
+                if lexer_class is not None:
+                    # Instantiate the class if we found it
+                    lexer = lexer_class()
+                else:
+                    try:
+                        # Search by language aliases
+                        # This throws an Exception if it's not found, and returns an instance if found.
+                        lexer = pygments.lexers.get_lexer_by_name(lang)
+                    except pygments.util.ClassNotFound:
+                        lexer = None
+            else:
+                class NoHighlightingLexer(pygments.lexer.Lexer):
+                    """
+                    Dummy lexer for when syntax highlighting is not wanted, but we still
+                    want to run it through the highlighter for styling and code escaping.
+                    """
+                    def __init__(self, **options):
+                        pygments.lexer.Lexer.__init__(self, **options)
+                        self.compress = options.get('compress', '')
+
+                    def get_tokens_unprocessed(self, text):
+                        return [(0, pygments.token.Token.Text, text)]
+                
+                lexer = NoHighlightingLexer()
+            
+            formatter_opts = {
+                'style': 'friendly',
+                'cssclass': 'mb-2 rounded',
+                'prestyles': 'padding: 0.5rem; margin-bottom: 0px',
+                'noclasses': True
+            }
+            formatter = pygments.formatters.HtmlFormatter(**formatter_opts)
+
+            return pygments.highlight(html.unescape(code), lexer, formatter)
+
+        if pre_text != "":
+            pre_text = format_code(pre_text)
+        if post_text != "":
+            post_text = format_code(post_text)
+
+
+        html_params.update({
+            "vertical" : {
+                "pre_text" : pre_text,
+                "post_text" : post_text,
+            },
+        })
+
     with open('pl-faded-parsons-question.mustache', 'r') as f:
         return chevron.render(f, html_params).strip()
 
