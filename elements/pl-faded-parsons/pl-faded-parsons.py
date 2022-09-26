@@ -1,3 +1,4 @@
+import code
 import prairielearn as pl
 import lxml.html as xml
 import random
@@ -49,23 +50,29 @@ def get_student_code(element_html, data):
 
 def render_question_panel(element_html, data):
     """Render the panel that displays the question (from code_lines.py) and interaction boxes"""
-    html_params = {
-        "code_lines":  read_file_lines(data, QUESTION_CODE_FILE),
-        "answers_name": get_answers_name(element_html)
-    }
 
     element = xml.fragment_fromstring(element_html)
-    if pl.get_string_attrib(element, "format", "") == "vertical": 
-        def get_child_contents_bytag(element, tag: str) -> str:
+    answers_name = get_answers_name(element_html)
+    vertical_format = pl.get_string_attrib(element, "format", "") == "vertical"
+
+    html_params = {
+        "answers_name": answers_name,
+    }
+
+    if vertical_format: 
+        def get_child_text_by_tag(element, tag: str) -> str:
             """get the innerHTML of the first child of `element` that has the tag `tag`
             default value is empty string"""
-            match = next( filter( lambda elem: elem.tag == tag, element ), None )
-            if match is None:
-                return ""
-            return match.text
+            return next( 
+                (   elem.text 
+                    for elem in element 
+                    if elem.tag == tag  ), 
+                ""
+            )
 
-        pre_text = get_child_contents_bytag(element, "pre-text")
-        post_text = get_child_contents_bytag(element, "post-text")
+        pre_text = get_child_text_by_tag(element, "pre-text")
+        post_text = get_child_text_by_tag(element, "post-text")
+        code_lines = get_child_text_by_tag(element, "code-lines")
 
         lang = pl.get_string_attrib(element, "language", None)
         def format_code(raw_code: str) -> str:
@@ -100,14 +107,13 @@ def render_question_panel(element_html, data):
                         return [(0, pygments.token.Token.Text, text)]
                 
                 lexer = NoHighlightingLexer()
-            
-            formatter_opts = {
-                'style': 'friendly',
-                'cssclass': 'mb-2 rounded',
-                'prestyles': 'padding: 0.5rem; margin-bottom: 0px',
-                'noclasses': True
-            }
-            formatter = pygments.formatters.HtmlFormatter(**formatter_opts)
+
+            formatter = pygments.formatters.HtmlFormatter(
+                style="friendly",
+                cssclass="mb-2 rounded",
+                prestyles="padding: 0.5rem; margin-bottom: 0px",
+                noclasses=True
+            )
 
             return pygments.highlight(html.unescape(code), lexer, formatter)
 
@@ -115,12 +121,16 @@ def render_question_panel(element_html, data):
             pre_text = format_code(pre_text)
         if post_text != "":
             post_text = format_code(post_text)
-
+        if code_lines == "":
+            html_params.update({ 
+                "code_lines" : read_file_lines(data, QUESTION_CODE_FILE) 
+            })
 
         html_params.update({
             "vertical" : {
                 "pre_text" : pre_text,
                 "post_text" : post_text,
+                "answers_name" : answers_name
             },
         })
 
