@@ -20,8 +20,9 @@
 
 
 {{! if vertical, full size boxes }}
-{{! IMPORTANT NOTE: these references to `answers_name` will not dereference since they are not 
-    part of the `vertical` dictionary passed to the rendering method }}
+{{! note: by entering the {#vertical} {/vertical} section, the mustache renderer dereferences 
+          all tags as children of the `vertical` node, which has a duplicate of the 
+          `answers_name` data dereferenced elsewhere }}
 {{#vertical}}
 <div class="pl-faded-parsons row">
   <div id="{{answers_name}}starter-code"     class="col-sm-12 border px-1 sortable-code"></div>

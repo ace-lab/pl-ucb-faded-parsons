@@ -25,7 +25,8 @@ var ParsonsGlobal = {
       'onSortableUpdate': (event, ui) => {}, // normally would log this event here.
       'trashId': 'starter-code',
       'max_wrong_lines': 1,
-      'trash_label': "Drag from here into the (yellow) solution box below, including indents",
+      'trash_label': "Drag from here into the (yellow) solution box, including indents",
+      'solution_label' : "",
       'syntax_language': 'lang-py' // lang-rb and other choices also acceptable
     });
     ParsonsGlobal.widget.init($('#code-lines').val());

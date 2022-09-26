@@ -55,6 +55,7 @@ file should eventually go in `PrairieLearn:PrairieLearn/docs/elements/pl-faded-p
 
 ![](elements/pl-faded-parsons.png)
 
+Horizontal format:
 ```html
 <pl-question-panel>
   The problem prompt and description of the question goes here.
@@ -66,14 +67,34 @@ file should eventually go in `PrairieLearn:PrairieLearn/docs/elements/pl-faded-p
 </pl-faded-parsons>
 ```
 
+Vetical format:
+```html
+<pl-question-panel>
+  The problem prompt and description of the question goes here.
+</pl-question-panel>
+
+<pl-faded-parsons>
+  <pre-text>
+    Any text to preface the submission box
+  </pre-text>
+  <code-lines>
+    Lines that the student can use to construct their solution
+  </code-lines>
+  <post-text>
+    Any text to succeed the submission box
+  </post-text>
+</pl-faded-parsons>
+```
+
 #### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`language`       | string  | "py"       | Language the problem is in, given as the filename extension for files in that language. Currently must be `py` (Python 3).
+`language`       | string  | "py"       | Language the problem is in, given as the filename extension for files in that language. Currently must be `py` (Python 3). If `format="vertical"` is specified, this determines what syntax highlighting to apply to the text in `pre-text` and `post-text`.
 `answers-name`   | string  | "fp"       | Name of answers dict, only matters if >1 Faded Parsons element in same question
 `partial-credit` | boolean | false      | Whether to give partial credit; see below.
 `line-order`     | string  | "alpha"    | How to display the lines of code to the student: `alpha` (alphabetical order), `fixed` (exactly as they appear in `code_lines.py`), or `random`.
+`format`         | string  | "horizontal" | Can be set to "vertical" to opt for the vertical format of presenting the question. In this form, both `pre-text` and `post-text` are entirely optional but the content of `code-lines` is required. If the tag `code-lines` is omitted, the element will search for `code_lines.py` in the `serverFilesQuestion/` sub-directory of the question.
 
 #### Example implementations
 
