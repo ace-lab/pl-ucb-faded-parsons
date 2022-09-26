@@ -67,7 +67,7 @@ Horizontal format:
 </pl-faded-parsons>
 ```
 
-Vetical format:
+Vertical format:
 ```html
 <pl-question-panel>
   The problem prompt and description of the question goes here.
