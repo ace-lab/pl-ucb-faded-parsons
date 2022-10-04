@@ -1,0 +1,8 @@
+{
+    "controller": "pl-local-storage.py",
+    "dependencies": {
+        "elementScripts": [
+            "pl-local-storage.js"
+        ]
+    }
+}
