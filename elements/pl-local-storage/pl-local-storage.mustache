@@ -3,6 +3,7 @@
 <script>
     $(function() {
         const key = "{{key}}";
-        const store = PlLocalStorage.registerStore(key);
+        const htmlSelector = "#pl-local-storage-{{key}}";
+        const store = PlLocalStorage.registerStore(key, htmlSelector);
     })
 </script>

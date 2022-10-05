@@ -1,2 +1,12 @@
 <pl-local-storage key="local-storage-test"></pl-local-storage>
 <em>Rendered!</em>
+<input type="text" id="test-main">
+<script>
+    $(function() {
+        const store = PlLocalStorage.getStore('local-storage-test');
+        $('#test-main').on('input propertychanged', function(e) {
+            store.val(e.target.value);
+            console.log(store.val());
+        })
+    })
+</script>

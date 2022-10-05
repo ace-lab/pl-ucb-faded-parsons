@@ -5,19 +5,14 @@ $(function() {
       const query = $(selector);
       if (!query.length) throw new Error(`No element exists for selector '${selector}' (attepmting to register to uuid ${uuid})`);
       this.stores[uuid] = query;
-      return contents => {
-        query.val(
-          btoa(
-            // he.encode(
+      return contents =>
+        query.val(btoa(he.encode(
               contents,
-            //   {
-            //     allowUnsafeSymbols: true, // HTML tags should be kept
-            //     useNamedReferences: true,
-            //   }
-            // )
-          )
-        );
-      }
+              {
+                allowUnsafeSymbols: true, // HTML tags should be kept
+                useNamedReferences: true,
+              }
+            )));
     },
     getStore: function(uuid) {
       if (uuid in this.stores) return this.stores[uuid];
