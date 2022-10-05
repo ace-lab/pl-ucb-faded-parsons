@@ -14,6 +14,7 @@
                 { "id": "2x2_determinant", "points": 10 },
                 { "id": "square_color", "points": 10 },
                 { "id": "sublist", "points": 4 },
+                { "id": "local_storage_test", "points": 4 },
                 { "id": "sublist_pl_order", "points": 4 }
             ]
         }
