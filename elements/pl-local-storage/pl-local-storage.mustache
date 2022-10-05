@@ -1,9 +1,22 @@
-<input type="hidden" id="pl-local-storage-{{key}}" value="{{current_file_contents}}"/>
-
+<input type="hidden" id="plls-input-{{uuid}}"
+       name="{{name}}" value="{{current_file_contents}}"/>
+<div id="plls-container-{{uuid}}" class="{{container_class}}">
+</div>
 <script>
     $(function() {
-        const key = "{{key}}";
-        const htmlSelector = "#pl-local-storage-{{key}}";
-        const store = PlLocalStorage.registerStore(key, htmlSelector);
-    })
+        const store = PlLocalStorage.registerStore('{{uuid}}');
+
+        // populate the container box with the old data
+        const editor = $('#plls-container-{{uuid}}');
+        editor.html(store());
+        // set a listener for edits in the box
+        editor.change(function() { console.log('change'); store(editor.html()); });
+
+        if (editor.hasClass('plls-readonly')) {
+            editor.css('pointer-events', 'none');
+            editor.find('input, textarea').each(function() {
+                this.setAttribute('readonly', 'true');
+            });
+        }
+    });
 </script>
