@@ -68,7 +68,7 @@ def render(element_html, data):
     else:
         html_params['current_file_contents'] = html_params['original_file_contents']
 
-    with open('pl-local-storage.mustache', 'r', encoding='utf-8') as f:
+    with open('pl-elem-storage.mustache', 'r', encoding='utf-8') as f:
         return chevron.render(f, html_params).strip()
 
 

@@ -1,11 +1,11 @@
 {
-    "controller": "pl-local-storage.py",
+    "controller": "pl-elem-storage.py",
     "dependencies": {
         "nodeModulesScripts": [
             "he/he.js"
         ],
         "elementScripts": [
-            "pl-local-storage.js"
+            "pl-elem-storage.js"
         ]
     }
 }

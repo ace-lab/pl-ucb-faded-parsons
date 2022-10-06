@@ -13,7 +13,7 @@ window['PlLocalStorage'] ||= {
   },
   getStore: function(uuid) {
     if (uuid in this.stores) return this.stores[uuid];
-    throw new Error(`No pl-local-storage is regestered to uuid: ${uuid}`);
+    throw new Error(`No pl-elem-storage is regestered to uuid: ${uuid}`);
   },
   getVal: function(uuid) {
     return this.getStore(uuid)()
