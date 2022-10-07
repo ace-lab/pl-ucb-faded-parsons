@@ -1,11 +1,6 @@
 {
     "controller": "pl-elem-storage.py",
     "dependencies": {
-        "nodeModulesScripts": [
-            "he/he.js"
-        ],
-        "elementScripts": [
-            "pl-elem-storage.js"
-        ]
+        "nodeModulesScripts": [ "he/he.js" ]
     }
 }
