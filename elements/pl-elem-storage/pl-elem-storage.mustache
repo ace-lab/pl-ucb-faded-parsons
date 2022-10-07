@@ -1,22 +1,32 @@
-<input type="hidden" id="plls-input-{{uuid}}"
+<input type="hidden" id="elmstr-input-{{uuid}}"
        name="{{name}}" value="{{current_file_contents}}"/>
-<div id="plls-container-{{uuid}}" class="{{container_class}}">
-</div>
+<script> PlElemStorage._registerStore('{{uuid}}'); </script>
+
+<!-- Example Usage in my-custom-element.mustache:
+{{! Create an element data store: }}
+<pl-elem-storage filename="my-custom-element-storage" uuid="{{uuid}}">
+</pl-elem-storage>
+{{! The uuid is critical to retrieve the right instance of this element.
+    When my-custom-element.mustache is rendered with chevron, be sure to
+    pass "uuid: pl.get_uuid()" as one of the rendering params.
+    This will create a uuid for each instance of the element rendering
+    (eg for displaying a submission or offering a problem).
+}}
+
+<textarea id="element-{{uuid}}-data-editor">
+</textarea>
+
 <script>
     $(function() {
-        const store = PlLocalStorage.registerStore('{{uuid}}');
+        // retrieve the registered store
+        const store = PlElemStorage.getStore('{{uuid}}');
 
         // populate the container box with the old data
-        const editor = $('#plls-container-{{uuid}}');
-        editor.html(store());
-        // set a listener for edits in the box
-        editor.change(function() { console.log('change'); store(editor.html()); });
+        const editor = $('#element-{{uuid}}-data-editor');
+        editor.val(store());
 
-        if (editor.hasClass('plls-readonly')) {
-            editor.css('pointer-events', 'none');
-            editor.find('input, textarea').each(function() {
-                this.setAttribute('readonly', 'true');
-            });
-        }
+        // set a listener for edits in the box
+        editor.on('input', function() { store(editor.val()); });
     });
 </script>
+-->

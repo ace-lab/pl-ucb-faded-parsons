@@ -22,7 +22,7 @@ def add_format_error(data, error_string):
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ['filename']
+    required_attribs = ['uuid', 'filename']
     optional_attribs = []
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -42,9 +42,11 @@ def render(element_html, data):
         raise Exception('Invalid panel type: ' + data['panel'])
 
     element = lxml.html.fragment_fromstring(element_html)
-    file_name = pl.get_string_attrib(element, 'key', '')
+
+    file_name = pl.get_string_attrib(element, 'filename', None)
+    uuid      = pl.get_string_attrib(element, 'uuid', None)
+
     answer_name = get_answer_name(file_name)
-    uuid = pl.get_uuid()
     element_text = element_inner_html(element)
 
     html_params = {
@@ -53,7 +55,7 @@ def render(element_html, data):
     }
 
     if data['panel'] != 'question':
-        html_params['container_class'] = 'plls-readonly'
+        html_params['container_class'] = 'elmstr-readonly'
 
     if element_text is not None:
         text_display = str(element_text)
@@ -74,7 +76,7 @@ def render(element_html, data):
 
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    file_name = pl.get_string_attrib(element, 'key', '')
+    file_name = pl.get_string_attrib(element, 'filename', '')
     answer_name = get_answer_name(file_name)
 
     # Get submitted answer or return parse_error if it does not exist

@@ -1,8 +1,8 @@
-window['PlLocalStorage'] ||= {
+window['PlElemStorage'] ||= {
   stores: {},
-  registerStore: function(uuid) {
+  _registerStore: function(uuid) {
     if (uuid in this.stores) throw new Error(`A store already exists for uuid` + uuid);
-    const query = $('#plls-input-' + uuid);
+    const query = $('#elmstr-input-' + uuid);
     this.stores[uuid] = contents => {
       if (contents == null) return atob(query.val());
       query.val(
