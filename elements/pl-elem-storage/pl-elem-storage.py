@@ -54,9 +54,6 @@ def render(element_html, data):
         'uuid': uuid
     }
 
-    if data['panel'] != 'question':
-        html_params['container_class'] = 'elmstr-readonly'
-
     if element_text is not None:
         text_display = str(element_text)
     else:
