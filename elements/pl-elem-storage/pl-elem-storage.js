@@ -1,5 +1,9 @@
 window.PlElemStorage ||= {
     stores: {},
+    getStore: function(uuid) {
+        if (uuid in this.stores) return this.stores[uuid];
+        throw new Error(`No pl-elem-storage is regestered to uuid: ${uuid}`);
+    },
     _registerStore: function(uuid) {
         if (!uuid) throw new Error(`Invalid uuid: '${uuid}'`);
         if (uuid in this.stores) throw new Error(`A store already exists for uuid` + uuid);
@@ -14,16 +18,6 @@ window.PlElemStorage ||= {
             )));
         };
         return this.stores[uuid];
-    },
-    getStore: function(uuid) {
-        if (uuid in this.stores) return this.stores[uuid];
-        throw new Error(`No pl-elem-storage is regestered to uuid: ${uuid}`);
-    },
-    getVal: function(uuid) {
-        return this.getStore(uuid)();
-    },
-    setVal: function(uuid, contents) {
-        return this.getStore(uuid)(contents);
     },
     // https://stackoverflow.com/questions/384286/how-do-you-check-if-a-javascript-object-is-a-dom-object
     _isNode: function(o) {

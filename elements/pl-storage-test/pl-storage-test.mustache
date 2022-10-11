@@ -1,5 +1,6 @@
 <pl-elem-storage filename="storage-test-store" uuid="{{uuid}}">
-    <li>Click + to add lines!</li>
+    <!-- Values inside here will be the default if there is nothing already written to this store --->
+    <li><em>Click + to add lines!</em></li>
 </pl-elem-storage>
 
 <span id="storage-test-incr-{{uuid}}">[+]</span>
@@ -8,22 +9,34 @@
 
 <script>
     $(function() {
+        // retrieve the store that was made for our uuid
         const store = PlElemStorage.getStore("{{uuid}}");
 
         const container = $("#storage-test-container-{{uuid}}");
 
-        const prev = store();
-        container.html(prev);
-
-        window['captureFn-{{uuid}}'] = function() {
+        function onChanges() {
+            this.setAttribute('value', this.value);
             store(container.html());
-        };
+        }
+
+        // restore the previous state (or default if there isn't one)
+        const prev = store(); // calling store with no args gets the current value
+        container.html(prev);
+        container.find('input').each(function() {
+            $(this).on('input', onChanges);
+        });
+
+        // make a hook to save this particular pl-storage-test instance from anywhere on the webpage
+        container.data('save', function() { store(container.html()); });
 
         $('#storage-test-incr-{{uuid}}').click(function() {
-            const inputId = `container-line${container.length}-{{uuid}}`;
-            const newInput = `<li><input oninput="$(this).attr('value', this.value); window['captureFn-{{uuid}}']();"></input></li>`;
-            container.append(newInput);
-            window['captureFn-{{uuid}}']();
+            container.append(`<li><input></input></li>`);
+            // write the append to the store
+            store(container.html());
+            // make sure the new input responds to changes
+            const newInput = container.children().last().children().first();
+            newInput.on('input', onChanges);
+
         });
     });
 </script>
