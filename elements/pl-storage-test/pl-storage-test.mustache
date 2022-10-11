@@ -1,0 +1,29 @@
+<pl-elem-storage filename="storage-test-store" uuid="{{uuid}}">
+    <li>Click + to add lines!</li>
+</pl-elem-storage>
+
+<span id="storage-test-incr-{{uuid}}">[+]</span>
+
+<ul class="storage-test-container" id="storage-test-container-{{uuid}}"></ul>
+
+<script>
+    $(function() {
+        const store = PlElemStorage.getStore("{{uuid}}");
+
+        const container = $("#storage-test-container-{{uuid}}");
+
+        const prev = store();
+        container.html(prev);
+
+        window['captureFn-{{uuid}}'] = function() {
+            store(container.html());
+        };
+
+        $('#storage-test-incr-{{uuid}}').click(function() {
+            const inputId = `container-line${container.length}-{{uuid}}`;
+            const newInput = `<li><input oninput="$(this).attr('value', this.value); window['captureFn-{{uuid}}']();"></input></li>`;
+            container.append(newInput);
+            window['captureFn-{{uuid}}']();
+        });
+    });
+</script>
