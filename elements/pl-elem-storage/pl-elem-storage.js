@@ -9,20 +9,18 @@ window.PlElemStorage ||= {
         if (uuid in this.stores) throw new Error(`A store already exists for uuid` + uuid);
         const query = $('#elmstr-input-' + uuid);
         this.stores[uuid] = contents => {
-            if (contents == null) return atob(query.val()); // retrieve current value and decode
-            if (!this._isNode(contents) && typeof contents !== 'string')
-                throw new Error('Store contents must be string or Node');
-            return query.val(btoa(he.encode( // safely store html and encode
-                contents,
-                { allowUnsafeSymbols: true, useNamedReferences: true }
-            )));
+            if (contents == null) { // retrieve current value and decode
+                // the pl-rich-text-editor implementation does not call he.decode on retrieval
+                // because the stored input is supposed to be valid html or JSON.
+                return atob(query.val());
+            }
+            if (typeof contents !== 'string') throw new Error('Store contents must be string');
+            return query.val(btoa(
+                he.encode( // process non-ascii characters
+                    contents, { allowUnsafeSymbols: true, useNamedReferences: true }
+                )
+            ));
         };
         return this.stores[uuid];
-    },
-    // https://stackoverflow.com/questions/384286/how-do-you-check-if-a-javascript-object-is-a-dom-object
-    _isNode: function(o) {
-        return typeof Node === "object"
-            ? o instanceof Node
-            : o && typeof o === "object" && typeof o.nodeType === "number" && typeof o.nodeName === "string";
     }
 };
