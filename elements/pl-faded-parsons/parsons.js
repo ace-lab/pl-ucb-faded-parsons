@@ -6,87 +6,78 @@ class LineBasedGrader {
     this.parson = parson;
   }
   grade(elementId) {
-    var parson = this.parson;
-    var elemId = elementId || parson.options.sortableId;
-    var student_code = parson.normalizeIndents(
+    const parson = this.parson;
+    const elemId = elementId || parson.options.sortableId;
+    const student_code = parson.normalizeIndents(
       parson.getModifiedCode("#ul-" + elemId)
     );
-    var lines_to_check = Math.min(
+    const lines_to_check = Math.min(
       student_code.length,
       parson.model_solution.length
     );
-    var errors = [],
-      log_errors = [];
-    var incorrectLines = [],
-      studentCodeLineObjects = [];
-    var i;
-    var wrong_order = false;
+    const errors = [],
+      log_errors = [],
+      incorrectLines = [];
+    let wrong_order = false;
 
-    // Find the line objects for the student's code
-    for (i = 0; i < student_code.length; i++) {
-      studentCodeLineObjects.push(
-        $.extend(true, {}, parson.getLineById(student_code[i].id))
-      );
-    }
+    const studentCodeLineObjects = student_code.map((line) =>
+      $.extend(true, {}, parson.getLineById(line.id))
+    );
 
     // This maps codeline strings to the index, at which starting from 0, we have last
     // found this codeline. This is used to find the best indices for each
     // codeline in the student's code for the LIS computation and, for example,
     // assigns appropriate indices for duplicate lines.
-    var lastFoundCodeIndex = {};
+    var lastFoundCodeIndex = {}; // left as var because weird memoization happens here
     $.each(studentCodeLineObjects, function (_index, lineObject) {
       // find the first matching line in the model solution
       // starting from where we have searched previously
-      for (
-        var i =
-          typeof lastFoundCodeIndex[lineObject.code] !== "undefined"
-            ? lastFoundCodeIndex[lineObject.code] + 1
-            : 0;
-        i < parson.model_solution.length;
-        i++
-      ) {
+      const lineObjectCodeExists = typeof lastFoundCodeIndex[lineObject.code] !== "undefined";
+      const lastEnd = lineObjectCodeExists ?
+          lastFoundCodeIndex[lineObject.code] : -1;
+      
+      for (let i = lastEnd + 1; i < parson.model_solution.length; i++) {
         if (parson.model_solution[i].code === lineObject.code) {
           // found a line in the model solution that matches the student's line
           lastFoundCodeIndex[lineObject.code] = i;
           lineObject.lisIgnore = false;
           // This will be used in LIS computation
           lineObject.position = i;
-          break;
+          return;
         }
       }
-      if (i === parson.model_solution.length) {
-        if (typeof lastFoundCodeIndex[lineObject.code] === "undefined") {
-          // Could not find the line in the model solution at all,
-          // it must be a distractor
-          // => add to feedback, log, and ignore in LIS computation
-          wrong_order = true;
-          lineObject.markIncorrectPosition();
-          incorrectLines.push(lineObject.orig);
-          lineObject.lisIgnore = true;
-        } else {
-          // The line is part of the solution but there are now
-          // too many instances of the same line in the student's code
-          // => Let's just have their correct position to be the same
-          // as the last one actually found in the solution.
-          // LIS computation will handle such duplicates properly and
-          // choose only one of the equivalent positions to the LIS and
-          // extra duplicates are left in the inverse and highlighted as
-          // errors.
-          // TODO This method will not always give the most intuitive
-          // highlights for lines to supposed to be moved when there are
-          // several extra duplicates in the student's code.
-          lineObject.lisIgnore = false;
-          lineObject.position = lastFoundCodeIndex[lineObject.code];
-        }
+
+      if (!lineObjectCodeExists) {
+        // Could not find the line in the model solution at all,
+        // it must be a distractor
+        // => add to feedback, log, and ignore in LIS computation
+        wrong_order = true;
+        lineObject.markIncorrectPosition();
+        incorrectLines.push(lineObject.orig);
+        lineObject.lisIgnore = true;
+      } else {
+        // The line is part of the solution but there are now
+        // too many instances of the same line in the student's code
+        // => Let's just have their correct position to be the same
+        // as the last one actually found in the solution.
+        // LIS computation will handle such duplicates properly and
+        // choose only one of the equivalent positions to the LIS and
+        // extra duplicates are left in the inverse and highlighted as
+        // errors.
+        // TODO This method will not always give the most intuitive
+        // highlights for lines to supposed to be moved when there are
+        // several extra duplicates in the student's code.
+        lineObject.lisIgnore = false;
+        lineObject.position = lastFoundCodeIndex[lineObject.code];
       }
     });
 
-    var lisStudentCodeLineObjects = studentCodeLineObjects.filter(function (
+    const lisStudentCodeLineObjects = studentCodeLineObjects.filter(function (
       lineObject
     ) {
       return !lineObject.lisIgnore;
     });
-    var inv = LIS.best_lise_inverse_indices(
+    const inv = LIS.best_lise_inverse_indices(
       lisStudentCodeLineObjects.map(function (lineObject) {
         return lineObject.position;
       })
@@ -119,8 +110,8 @@ class LineBasedGrader {
     // Finally, check indent if no other errors
     if (errors.length === 0) {
       for (i = 0; i < lines_to_check; i++) {
-        var code_line = student_code[i];
-        var model_line = parson.model_solution[i];
+        const code_line = student_code[i];
+        const model_line = parson.model_solution[i];
         if (
           code_line.indent !== model_line.indent &&
           (!parson.options.first_error_only || errors.length === 0)
@@ -204,7 +195,7 @@ class ParsonsWidget {
     this.state_path = [];
     this.states = {};
 
-    var defaults = {
+    const defaults = {
       incorrectSound: false,
       x_indent: 50,
       can_indent: true,
@@ -250,13 +241,13 @@ class ParsonsWidget {
   // max_distractrors: The number of distractors allowed to be included with
   //   the lines required in the solution
   parseCode(lines, max_distractors) {
-    var distractors = [],
+    const distractors = [],
       given = [],
       indented = [],
       widgetData = [],
-      lineObject,
       errors = [],
       that = this;
+    let lineObject;
     // Create line objects out of each codeline and separate
     // lines belonging to the solution and distractor lines
     // Fields in line objects:
@@ -295,7 +286,7 @@ class ParsonsWidget {
       }
     });
 
-    var normalized = this.normalizeIndents(indented);
+    const normalized = this.normalizeIndents(indented);
 
     $.each(normalized, function (_index, item) {
       if (item.indent < 0) {
@@ -312,9 +303,9 @@ class ParsonsWidget {
 
     // Remove extra distractors if there are more alternative distrators
     // than should be shown at a time
-    var permutation = this.getRandomPermutation(distractors.length);
-    var selected_distractors = [];
-    for (var i = 0; i < max_distractors; i++) {
+    const permutation = this.getRandomPermutation(distractors.length);
+    const selected_distractors = [];
+    for (let i = 0; i < max_distractors; i++) {
       selected_distractors.push(distractors[permutation[i]]);
       widgetData.push(distractors[permutation[i]]);
     }
@@ -334,7 +325,7 @@ class ParsonsWidget {
   }
   init(text) {
     // TODO: Error handling, parseCode may return errors in an array in property named errors.
-    var initial_structures = this.parseCode(
+    const initial_structures = this.parseCode(
       text.split("\n"),
       this.options.max_wrong_lines
     );
@@ -342,7 +333,7 @@ class ParsonsWidget {
     this.given = initial_structures.given;
     this.extra_lines = initial_structures.distractors;
     this.modified_lines = initial_structures.widgetInitial;
-    var id_prefix = this.id_prefix;
+    const id_prefix = this.id_prefix;
 
     // Add ids to the line objects in the user-draggable lines
     $.each(this.modified_lines, function (index, item) {
@@ -352,7 +343,7 @@ class ParsonsWidget {
 
     // a solution to the problem that after refreshing codelines
     // will remember their indent in the view, but not in model
-    $('#ul-parsons-solution').ready(() => {
+    setTimeout(() => {
       for (const line of this.modified_lines) {
         const elem = line.elem();
         if (elem) {
@@ -363,16 +354,14 @@ class ParsonsWidget {
           }
         }
       }
-    });
+    }, 100);
   }
   getHash(searchString) {
-    var hash = [],
-      ids = $(searchString).sortable("toArray"),
-      line;
-    for (var i = 0; i < ids.length; i++) {
-      line = this.getLineById(ids[i]);
-      hash.push(line.orig + "_" + line.indent);
-    }
+    const ids = $(searchString).sortable("toArray");
+    const hash = ids.map(id => {
+      const line = this.getLineById(id);
+      return line.orig + "_" + line.indent;
+    });
     //prefix with something to handle empty output situations
     if (hash.length === 0) {
       return "-";
@@ -387,21 +376,21 @@ class ParsonsWidget {
     return this.getHash("#ul-" + this.options.trashId);
   }
   solutionCode() {
-    var solutionCode = "";
-    var codeMetadata = "";
-    var lines = this.normalizeIndents(
+    let solutionCode = "";
+    let codeMetadata = "";
+    const lines = this.normalizeIndents(
       this.getModifiedCode("#ul-" + this.options.sortableId)
     );
-    for (let i = 0; i < lines.length; i++) {
-      var blankText = "";
+    for (const line of lines) {
+      let blankText = "";
       //Original line from the YAML File
-      var originalLine = "";
-      let yamlConfigClone = $("#" + lines[i].id).clone();
+      let originalLine = "";
+      const yamlConfigClone = $("#" + line.id).clone();
       yamlConfigClone.find("input").each(function (_, inp) {
         inp.replaceWith("!BLANK");
         blankText += " #blank" + inp.value;
       });
-      let codeClone = $("#" + lines[i].id).clone();
+      const codeClone = $("#" + line.id).clone();
       codeClone.find("input").each(function (_, inp) {
         inp.replaceWith(inp.value);
       });
@@ -411,14 +400,14 @@ class ParsonsWidget {
         originalLine = " #!ORIGINAL" + yamlConfigClone[0].innerText + blankText;
       }
       solutionCode +=
-        "  ".repeat(lines[i].indent) + codeClone[0].innerText + "\n";
+        "  ".repeat(line.indent) + codeClone[0].innerText + "\n";
       codeMetadata += originalLine + "\n";
     }
     return [solutionCode, codeMetadata];
   }
   addLogEntry(entry) {
-    var state, previousState;
-    var logData = {
+    let previousState;
+    const logData = {
       time: new Date(),
       output: this.solutionHash(),
       type: "action",
@@ -432,7 +421,7 @@ class ParsonsWidget {
       entry.target = entry.target.replace(this.id_prefix, "");
     }
 
-    state = logData.output;
+    const state = logData.output;
 
     jQuery.extend(logData, entry);
     this.user_actions.push(logData);
@@ -481,14 +470,12 @@ class ParsonsWidget {
   // Get a line object by the full id including id prefix
   // (see parseCode for description of line objects)
   getLineById(id) {
-    var index = -1;
-    for (var i = 0; i < this.modified_lines.length; i++) {
-      if (this.modified_lines[i].id == id) {
-        index = i;
-        break;
+    for (const line of this.modified_lines) {
+      if (line.id == id) {
+        return line;
       }
     }
-    return this.modified_lines[index];
+    return this.modified_lines[-1];
   }
   // Check and normalize code indentation.
   // Does not use the current object (this) ro make changes to
@@ -510,49 +497,27 @@ class ParsonsWidget {
    * */
   getModifiedCode(search_string) {
     //ids of the the modified code
-    var lines_to_return = [],
-      solution_ids = $(search_string).sortable("toArray"),
-      item;
-    for (let i = 0; i < solution_ids.length; i++) {
-      item = this.getLineById(solution_ids[i]);
-      lines_to_return.push($.extend(new ParsonsCodeline(), item));
-    }
-    return lines_to_return;
+    const solution_ids = $(search_string).sortable("toArray");
+    return solution_ids.map(id => {
+      const item = this.getLineById(id);
+      return $.extend(new ParsonsCodeline(), item);
+    });
   }
   hashToIDList(hash) {
-    var lineValues;
-    var h;
-
-    if (hash === "-" || hash === "" || hash === null) {
-      h = [];
-    } else {
-      h = hash.split("-");
-    }
-
-    var ids = [];
-    for (var i = 0; i < h.length; i++) {
-      lineValues = h[i].split("_");
-      ids.push(this.modified_lines[lineValues[0]].id);
-    }
-    return ids;
+    if (hash === "-" || hash === "" || hash === null) return [];
+    return hash.split("-").map(item => {
+      const lineValues = item.split("_");
+      return this.modified_lines[lineValues[0]].id;
+    });
   }
   updateIndentsFromHash(hash) {
-    var lineValues;
-    var h;
+    if (hash === "-" || hash === "" || hash === null) return;
 
-    if (hash === "-" || hash === "" || hash === null) {
-      h = [];
-    } else {
-      h = hash.split("-");
-    }
-
-    var ids = [];
-    for (var i = 0; i < h.length; i++) {
-      lineValues = h[i].split("_");
+    for (const item of hash.split("-")) {
+      const lineValues = item.split("_");
       this.modified_lines[lineValues[0]].indent = Number(lineValues[1]);
       this.updateHTMLIndent(this.modified_lines[lineValues[0]].id);
     }
-    return ids;
   }
   /**
    * TODO(petri) refoctor to UI
@@ -572,7 +537,7 @@ class ParsonsWidget {
    */
   getFeedback() {
     this.feedback_exists = true;
-    var fb = this.grader.grade();
+    let fb = this.grader.grade();
     if (this.options.feedback_cb) {
       this.options.feedback_cb(fb); //TODO(petri): what is needed?
     }
@@ -582,7 +547,7 @@ class ParsonsWidget {
     }
     // log the feedback and return; based on the type of grader
     if ("html" in fb) {
-      // unittest/vartests type feedback
+      // unittest/lettests type feedback
       this.addLogEntry({
         type: "feedback",
         tests: fb.tests,
@@ -601,7 +566,7 @@ class ParsonsWidget {
   clearFeedback() {
     if (this.feedback_exists) {
       $("#ul-" + this.options.sortableId).removeClass("incorrect correct");
-      var li_elements = $("#ul-" + this.options.sortableId + " li");
+      const li_elements = $("#ul-" + this.options.sortableId + " li");
       $.each(this.FEEDBACK_STYLES, function (_index, value) {
         li_elements.removeClass(value);
       });
@@ -609,13 +574,12 @@ class ParsonsWidget {
     this.feedback_exists = false;
   }
   getRandomPermutation(n) {
-    var permutation = [];
-    var i;
-    for (i = 0; i < n; i++) {
+    const permutation = [];
+    for (let i = 0; i < n; i++) {
       permutation.push(i);
     }
-    var swap1, swap2, tmp;
-    for (i = 0; i < n; i++) {
+    let swap1, swap2, tmp;
+    for (let i = 0; i < n; i++) {
       swap1 = Math.floor(Math.random() * n);
       swap2 = Math.floor(Math.random() * n);
       tmp = permutation[swap1];
@@ -625,15 +589,12 @@ class ParsonsWidget {
     return permutation;
   }
   shuffleLines() {
-    var permutation = (
+    const permutation = (
       this.options.permutation
         ? this.options.permutation
         : this.getRandomPermutation
     )(this.modified_lines.length);
-    var idlist = [];
-    for (var i in permutation) {
-      idlist.push(this.modified_lines[permutation[i]].id);
-    }
+    const idlist = permutation.map(n => this.modified_lines[n].id);
     if (this.options.trashId) {
       this.createHTMLFromLists([], idlist);
     } else {
@@ -663,19 +624,13 @@ class ParsonsWidget {
         return 0;
       }
     }
-    var codeLines = this.modified_lines.slice();
+    const codeLines = this.modified_lines.slice();
     codeLines.sort(compare);
-    var idlist = [];
-    for (let i = 0; i < codeLines.length; i += 1) {
-      if (this.given.slice().indexOf(codeLines[i]) < 0) {
-        idlist.push(codeLines[i].id);
-      }
-    }
-    var givenCodeLines = this.given.slice();
-    var givenIdlist = [];
-    for (let i = 0; i < givenCodeLines.length; i += 1) {
-      givenIdlist.push(givenCodeLines[i].id);
-    }
+    const idlist = codeLines
+      .filter(line => this.given.slice().indexOf(line) < 0)
+      .map(line => line.id);
+    const givenCodeLines = this.given.slice();
+    const givenIdlist = givenCodeLines.map(line => line.id);
     if (this.options.trashId) {
       this.createHTMLFromLists(givenIdlist, idlist);
     } else {
@@ -694,13 +649,13 @@ class ParsonsWidget {
     });
   }
   createHTMLFromHashes(solutionHash, trashHash) {
-    var solution = this.hashToIDList(solutionHash);
-    var trash = this.hashToIDList(trashHash);
+    const solution = this.hashToIDList(solutionHash);
+    const trash = this.hashToIDList(trashHash);
     this.createHTMLFromLists(solution, trash);
     this.updateIndentsFromHash(solutionHash);
   }
   updateHTMLIndent(codelineID) {
-    var line = this.getLineById(codelineID);
+    const line = this.getLineById(codelineID);
     $("#" + codelineID).css(
       "margin-left",
       this.options.x_indent * line.indent + "px"
@@ -712,17 +667,17 @@ class ParsonsWidget {
       return;
     }
 
-    var maxIndent = 0;
+    let maxIndent = 0;
     this.modified_lines.forEach(function (line) {
       if (!excludedItem || line != excludedItem) {
         maxIndent = Math.max(maxIndent, line.indent);
       }
     });
     // Get current indents
-    var element = $("#ul-" + this.options.sortableId);
-    var backgroundColor = element.css("background-color");
-    var backgroundPosition = "";
-    for (var i = 1; i <= maxIndent + 1; i++) {
+    const element = $("#ul-" + this.options.sortableId);
+    const backgroundColor = element.css("background-color");
+    let backgroundPosition = "";
+    for (let i = 1; i <= maxIndent + 1; i++) {
       backgroundPosition += i * this.options.x_indent + "px 0, ";
     }
     element.css({
@@ -742,9 +697,9 @@ class ParsonsWidget {
     });
   }
   codeLineToHTML(codeline) {
-    var numBlanksThisLine = 0;
+    let numBlanksThisLine = 0;
     while (codeline.code.search(/!BLANK/) >= 0) {
-      var replaceText = "";
+      let replaceText = "";
       console.log(codeline.code);
       if (codeline.code.search(ParsonsWidget.blankRegexp) >= 0) {
         replaceText = codeline.code.match(ParsonsWidget.blankRegexp)[1].trim();
@@ -776,16 +731,13 @@ class ParsonsWidget {
     );
   }
   codeLinesToHTML(codelineIDs, destinationID) {
-    var lineHTML = [];
-    for (var id in codelineIDs) {
-      var line = this.getLineById(codelineIDs[id]);
-      lineHTML.push(this.codeLineToHTML(line));
-    }
+    const lineHTML = codelineIDs
+      .map(id => this.codeLineToHTML(this.getLineById(id)));
     return '<ul id="ul-' + destinationID + '">' + lineHTML.join("") + "</ul>";
   }
   /** modifies the DOM by inserting exercise elements into it */
   createHTMLFromLists(solutionIDs, trashIDs) {
-    var html;
+    let html;
     if (this.options.trashId) {
       html =
         (this.options.trash_label
@@ -810,8 +762,8 @@ class ParsonsWidget {
       prettyPrint();
     }
 
-    var that = this;
-    var sortable = $("#ul-" + this.options.sortableId).sortable({
+    const that = this;
+    const sortable = $("#ul-" + this.options.sortableId).sortable({
       start: function () {
         that.clearFeedback();
       },
@@ -835,7 +787,7 @@ class ParsonsWidget {
     });
     sortable.addClass("output");
     if (this.options.trashId) {
-      var trash = $("#ul-" + this.options.trashId).sortable({
+      const trash = $("#ul-" + this.options.trashId).sortable({
         connectWith: sortable,
         start: function () {
           that.clearFeedback();
@@ -870,16 +822,13 @@ class ParsonsWidget {
     // Log the original codelines in the exercise in order to be able to
     // match the input/output hashes to the code later on. We need only a
     // few properties of the codeline objects
-    var bindings = [];
-    for (var i = 0; i < this.modified_lines.length; i++) {
-      var line = this.modified_lines[i];
-      bindings.push({ code: line.code, distractor: line.distractor });
-    }
+    const bindings = this.modified_lines
+      .map(line => { return { code: line.code, distractor: line.distractor }; });
     this.addLogEntry({ type: "init", time: new Date(), bindings: bindings });
   }
 }
 
-ParsonsWidget._graders = { "LineBasedGrader": LineBasedGrader };
+ParsonsWidget._graders = { LineBasedGrader: LineBasedGrader };
 ParsonsWidget.blankRegexp = /#blank([^#]*)/;
 
 ParsonsWidget.userStrings = {
@@ -955,10 +904,10 @@ ParsonsWidget.userStrings = {
       "</span>"
     );
   },
-  variabletest_assertion: function (varname, expected, actual) {
+  letiabletest_assertion: function (letname, expected, actual) {
     return (
-      "Expected value of variable " +
-      varname +
+      "Expected value of letiable " +
+      letname +
       ": <span class='expected'>" +
       expected +
       "</span><br>" +
