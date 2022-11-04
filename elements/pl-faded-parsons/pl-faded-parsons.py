@@ -1,11 +1,9 @@
-import lxml
 import prairielearn as pl
 import lxml.html as xml
 import random
 import chevron
 import os
 import base64
-import markdown
 import json
 
 SOLUTION_CODE_FILE    = 'solution.py'
@@ -50,12 +48,12 @@ def get_student_code(element_html, data):
 def base64_encode(s):
     return base64.b64encode(s.encode("ascii")).decode("ascii")
 
-def render_markdown(text):
-    html = markdown.markdown(text)
-    return html
+# def render_markdown(text):
+#     html = markdown.markdown(text)  # module 'markdown' no longer supported
+#     return html
 
 def render_question_panel(element_html, data):
-    element = lxml.html.fragment_fromstring(element_html)
+    element = xml.fragment_fromstring(element_html)
     populate_info = []
     for blank in data['submitted_answers']:
         if blank[0:24] == 'parsons-solutioncodeline':
