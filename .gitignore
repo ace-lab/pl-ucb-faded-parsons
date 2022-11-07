@@ -1,1 +1,12 @@
 TAGS
+.vscode/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# C extensions
+*.so
+
+node_modules
+**/.DS_Store
