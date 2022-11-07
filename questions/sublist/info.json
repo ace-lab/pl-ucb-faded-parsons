@@ -1,0 +1,17 @@
+{
+    "uuid": "8d356293-c6dd-4ef2-8e77-d92c82297df1",
+    "title": "Sublist",
+    "topic": "",
+    "tags": [
+        "berkeley",
+        "fp"
+    ],
+    "type": "v3",
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 5
+    }
+}

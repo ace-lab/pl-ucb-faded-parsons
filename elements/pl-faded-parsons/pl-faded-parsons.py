@@ -4,8 +4,8 @@ import lxml.html as xml
 import random
 import chevron
 import os
-import pygments
-import html
+import base64
+import json
 
 QUESTION_CODE_FILE     = 'code_lines.py'
 SOLUTION_CODE_FILE    = 'solution.py'
@@ -15,7 +15,7 @@ def prepare(element_html, data):
     data['params']['random_number'] = random.random()
     return data
 
-    
+
 #
 # Helper functions
 #
@@ -47,6 +47,12 @@ def get_student_code(element_html, data):
     student_code = data['submitted_answers'].get(answers_name + 'student-parsons-solution', None)
     return student_code
 
+def base64_encode(s):
+    return base64.b64encode(s.encode("ascii")).decode("ascii")
+
+# def render_markdown(text):
+#     html = markdown.markdown(text)  # module 'markdown' no longer supported
+#     return html
 
 def render_question_panel(element_html, data):
     """Render the panel that displays the question (from code_lines.py) and interaction boxes"""
@@ -55,8 +61,20 @@ def render_question_panel(element_html, data):
     answers_name = get_answers_name(element_html)
     vertical_format = pl.get_string_attrib(element, "format", "") == "vertical"
 
+    populate_info = []
+    for blank in data['submitted_answers']:
+        if blank[0:24] == 'parsons-solutioncodeline':
+            populate_info.append({'name': blank, 'value': data['submitted_answers'][blank]})
+
+    student_order_info = json.loads(data['submitted_answers']['starter-code-order']) if 'starter-code-order' in data['submitted_answers'] else []
+    solution_order_info = json.loads(data['submitted_answers']['parsons-solution-order']) if 'parsons-solution-order' in data['submitted_answers'] else []
+
     html_params = {
-        "answers_name": answers_name,
+        "answers_name": answers_name,        
+        "code_lines":  str(element.text),
+        "populate_info": populate_info,
+        "student_order_info": student_order_info,
+        "solution_order_info": solution_order_info,
     }
 
     def get_child_text_by_tag(element, tag: str) -> str:
@@ -69,7 +87,22 @@ def render_question_panel(element_html, data):
             ""
         )
     
-    code_lines = get_child_text_by_tag(element, "code-lines")
+    try:    
+        code_lines = get_child_text_by_tag(element, "code-lines")
+        if code_lines == "":
+            html_params.update({ 
+                "code_lines" : read_file_lines(data, QUESTION_CODE_FILE) 
+            })
+        else:
+            html_params.update({
+                "code_lines" : code_lines
+            })
+    except StopIteration as e: 
+        # catch the error thrown by `get_child_text_by_tag` if there's 
+        #   no <code-lines> element
+        # if we do, then we don't need to update code-lines, as that means 
+        #   this is a question without the <code-lines> sub-element
+        pass
 
     if vertical_format: 
         
@@ -95,15 +128,6 @@ def render_question_panel(element_html, data):
             html_params["vertical"].update({
                 "language" : f"language=\"lang\""
             })
-    
-    if code_lines == "":
-        html_params.update({ 
-            "code_lines" : read_file_lines(data, QUESTION_CODE_FILE) 
-        })
-    else:
-        html_params.update({
-            "code_lines" : code_lines
-        })
 
     with open('pl-faded-parsons-question.mustache', 'r') as f:
         return chevron.render(f, html_params).strip()
@@ -111,7 +135,7 @@ def render_question_panel(element_html, data):
 def render_submission_panel(element_html, data):
     """Show student what they submitted"""
     html_params = {
-        "code" : get_student_code(element_html, data),
+        'code': get_student_code(element_html, data),
     }
     with open('pl-faded-parsons-submission.mustache', 'r') as f:
         return chevron.render(f, html_params).strip()
@@ -119,8 +143,12 @@ def render_submission_panel(element_html, data):
 
 def render_answer_panel(element_html, data):
     """Show the instructor's reference solution"""
+    answers_name = get_answers_name(element_html)
+    code = data['submitted_answers'].get(answers_name + 'code-lines', None)
     html_params = {
-        "notes": read_file_lines(data, SOLUTION_NOTES_FILE, error_if_not_found=False)
+        "solution_path": "tests/ans.py",
+        # "notes": render_markdown(read_file_lines(data, SOLUTION_NOTES_FILE, error_if_not_found=False))
+        # "notes": data,
     }
     with open('pl-faded-parsons-answer.mustache', 'r') as f:
         return chevron.render(f, html_params).strip()
@@ -136,8 +164,6 @@ def render(element_html, data):
     else:
         raise Exception(f'Invalid panel type: {panel_type}')
 
-
-
 def parse(element_html, data):
     """Parse student's submitted answer (HTML form submission)"""
     # make an XML fragment that can be passed around to other PL functions,
@@ -149,17 +175,23 @@ def parse(element_html, data):
     # only Python problems are allowed right now (lang MUST be "py")
     # lang = pl.get_string_attrib(element, 'language') # TODO: commenting is a stop gap for the pilot study, find a better solution
 
+    file_name = pl.get_string_attrib(element, 'file-name', 'user_code.py')
+
+    _files = [
+        {
+            "name": file_name,
+            "contents": base64_encode(get_student_code(element_html, data))
+        }
+    ]
+    data['submitted_answers']['_files'] = []
+    data['submitted_answers']['_files'].extend(_files)
     # TBD do error checking here for other attribute values....
     # set data['format_errors']['elt'] to an error message indicating an error with the
-    # contents/format of the HTML element named 'elt'                               
+    # contents/format of the HTML element named 'elt'
 
     return
 
 def grade(element_html, data):
     """Grade the student's response; many strategies are possible..."""
-    student_code = get_student_code(element_html, data)
-    # at this point `student_code` is a string representing the exact submitted Python code
-    # at a minimum, we have to set data['score'] to a value from 0.0...1.0 
-    data['score'] = 1.0
-    return(data)
-
+    #no need because externally graded
+    pass
