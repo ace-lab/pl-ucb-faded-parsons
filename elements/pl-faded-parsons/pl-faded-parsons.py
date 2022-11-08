@@ -47,7 +47,7 @@ def render_question_panel(element_html, data):
     """Render the panel that displays the question (from code_lines.py) and interaction boxes"""
     element = xml.fragment_fromstring(element_html)
     answers_name = get_answers_name(element_html)
-    vertical_format = pl.get_string_attrib(element, "format", "") == "vertical"
+    vertical_format = pl.get_string_attrib(element, "format", None) == "vertical"
 
     populate_info = []
     for blank in data['submitted_answers']:
@@ -68,30 +68,30 @@ def render_question_panel(element_html, data):
     def get_child_text_by_tag(element, tag: str) -> str:
         """get the innerHTML of the first child of `element` that has the tag `tag`
         default value is empty string"""
-        return next(
-            (   elem.text
-                for elem in element
-                if elem.tag == tag  ),
-            ""
-        )
+        return next((elem.text for elem in element if elem.tag == tag), "")
 
-    # if the code-lines tag is empty, read the file instead.
-    code_lines = get_child_text_by_tag(element, "code-lines") \
-        or read_file_lines(data, 'code_lines.py')
 
-    html_params.update({
-        "code_lines" : code_lines
-    })
+    pre_text = get_child_text_by_tag(element, "pre-text") \
+        .rstrip("\n") # trim trailing newlines
+    post_text = get_child_text_by_tag(element, "post-text") \
+        .lstrip("\n") # trim leading newlines
+
+    if pre_text or post_text:
+        if not vertical_format:
+            raise Exception("pre-text and post-text are not supported in horizontal mode. " +
+                'Add format="vertical" to your element to use this feature.')
+
+        code_lines = get_child_text_by_tag(element, "code-lines") or \
+            read_file_lines(data, 'code_lines.txt', error_if_not_found=False)
+
+        if not code_lines:
+            raise Exception("A non-empty code_lines.txt or <code-lines> child must be provided in horizontal mode.")
+
+        html_params.update({
+            "code_lines" : code_lines
+        })
 
     if vertical_format:
-        pre_text = get_child_text_by_tag(element, "pre-text")
-        post_text = get_child_text_by_tag(element, "post-text")
-
-        # removes newlines that would be between the pre-text and the body
-        # or between the body and the post-text
-        pre_text  = pre_text.rstrip("\n")
-        post_text = post_text.lstrip("\n")
-
         html_params.update({
             "vertical" : {
                 "pre_text" : pre_text,
