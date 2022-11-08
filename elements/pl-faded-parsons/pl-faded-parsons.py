@@ -7,7 +7,7 @@ import os
 import base64
 import json
 
-QUESTION_CODE_FILE     = 'code_lines.py'
+QUESTION_CODE_FILE     = 'code_lines.txt'
 SOLUTION_CODE_FILE    = 'solution.py'
 SOLUTION_NOTES_FILE   = 'solution_notes.md'
 
@@ -59,7 +59,7 @@ def render_question_panel(element_html, data):
 
     element = xml.fragment_fromstring(element_html)
     answers_name = get_answers_name(element_html)
-    vertical_format = pl.get_string_attrib(element, "format", "") == "vertical"
+    vertical_format = pl.get_string_attrib(element, "format", None) == "vertical"
 
     populate_info = []
     for blank in data['submitted_answers']:
@@ -70,7 +70,7 @@ def render_question_panel(element_html, data):
     solution_order_info = json.loads(data['submitted_answers']['parsons-solution-order']) if 'parsons-solution-order' in data['submitted_answers'] else []
 
     html_params = {
-        "answers_name": answers_name,        
+        "answers_name": answers_name,
         "code_lines":  str(element.text),
         "populate_info": populate_info,
         "student_order_info": student_order_info,
@@ -80,42 +80,30 @@ def render_question_panel(element_html, data):
     def get_child_text_by_tag(element, tag: str) -> str:
         """get the innerHTML of the first child of `element` that has the tag `tag`
         default value is empty string"""
-        return next( 
-            (   elem.text 
-                for elem in element 
-                if elem.tag == tag  ), 
-            ""
-        )
-    
-    try:    
-        code_lines = get_child_text_by_tag(element, "code-lines")
-        if code_lines == "":
-            html_params.update({ 
-                "code_lines" : read_file_lines(data, QUESTION_CODE_FILE) 
-            })
-        else:
-            html_params.update({
-                "code_lines" : code_lines
-            })
-    except StopIteration as e: 
-        # catch the error thrown by `get_child_text_by_tag` if there's 
-        #   no <code-lines> element
-        # if we do, then we don't need to update code-lines, as that means 
-        #   this is a question without the <code-lines> sub-element
-        pass
+        return next((elem.text for elem in element if elem.tag == tag), "")
 
-    if vertical_format: 
-        
-        pre_text = get_child_text_by_tag(element, "pre-text")
-        post_text = get_child_text_by_tag(element, "post-text")
 
-        lang = pl.get_string_attrib(element, "language", None)
+    pre_text = get_child_text_by_tag(element, "pre-text") \
+        .rstrip("\n") # trim trailing newlines
+    post_text = get_child_text_by_tag(element, "post-text") \
+        .lstrip("\n") # trim leading newlines
 
-        while pre_text[-1] == "\n":
-            pre_text = pre_text[:-1]
-        while post_text[0] == '\n':
-            post_text = post_text[1:]
-            
+    if pre_text or post_text:
+        if not vertical_format:
+            raise Exception("pre-text and post-text are not supported in horizontal mode. " +
+                'Add format="vertical" to your element to use this feature.')
+
+        code_lines = get_child_text_by_tag(element, "code-lines") or \
+            read_file_lines(data, QUESTION_CODE_FILE, error_if_not_found=False)
+
+        if not code_lines:
+            raise Exception("A non-empty code_lines.txt or <code-lines> child must be provided in horizontal mode.")
+
+        html_params.update({
+            "code_lines" : code_lines
+        })
+
+    if vertical_format:
         html_params.update({
             "vertical" : {
                 "pre_text" : pre_text,
@@ -124,9 +112,9 @@ def render_question_panel(element_html, data):
             },
         })
 
-        if lang is not None:
+        if lang := pl.get_string_attrib(element, "language", None):
             html_params["vertical"].update({
-                "language" : f"language=\"lang\""
+                "language" : f"language=\"{lang}\""
             })
 
     with open('pl-faded-parsons-question.mustache', 'r') as f:
@@ -171,7 +159,7 @@ def parse(element_html, data):
     element = xml.fragment_fromstring(element_html)
 
     # `element` is now an XML data structure - see docs for LXML library at lxml.de
-    
+
     # only Python problems are allowed right now (lang MUST be "py")
     # lang = pl.get_string_attrib(element, 'language') # TODO: commenting is a stop gap for the pilot study, find a better solution
 
