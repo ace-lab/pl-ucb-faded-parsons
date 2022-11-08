@@ -75,33 +75,22 @@ def render_question_panel(element_html, data):
             ""
         )
 
-    try:
-        code_lines = get_child_text_by_tag(element, "code-lines")
-        if code_lines == "":
-            html_params.update({
-                "code_lines" : read_file_lines(data, 'code_lines.py')
-            })
-        else:
-            html_params.update({
-                "code_lines" : code_lines
-            })
-    except StopIteration as e:
-        # catch the error thrown by `get_child_text_by_tag` if there's
-        #   no <code-lines> element
-        # if we do, then we don't need to update code-lines, as that means
-        #   this is a question without the <code-lines> sub-element
-        pass
+    # if the code-lines tag is empty, read the file instead.
+    code_lines = get_child_text_by_tag(element, "code-lines") \
+        or read_file_lines(data, 'code_lines.py')
+
+    html_params.update({
+        "code_lines" : code_lines
+    })
 
     if vertical_format:
         pre_text = get_child_text_by_tag(element, "pre-text")
         post_text = get_child_text_by_tag(element, "post-text")
 
-        lang = pl.get_string_attrib(element, "language", None)
-
-        while pre_text[-1] == "\n":
-            pre_text = pre_text[:-1]
-        while post_text[0] == '\n':
-            post_text = post_text[1:]
+        # removes newlines that would be between the pre-text and the body
+        # or between the body and the post-text
+        pre_text  = pre_text.rstrip("\n")
+        post_text = post_text.lstrip("\n")
 
         html_params.update({
             "vertical" : {
@@ -111,9 +100,9 @@ def render_question_panel(element_html, data):
             },
         })
 
-        if lang is not None:
+        if lang := pl.get_string_attrib(element, "language", None):
             html_params["vertical"].update({
-                "language" : f"language=\"lang\""
+                "language" : f"language=\"{lang}\""
             })
 
     with open('pl-faded-parsons-question.mustache', 'r') as f:
