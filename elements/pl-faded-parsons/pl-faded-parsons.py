@@ -1,19 +1,9 @@
-import code
 import prairielearn as pl
 import lxml.html as xml
-import random
 import chevron
 import os
 import base64
 import json
-
-QUESTION_CODE_FILE     = 'code_lines.txt'
-SOLUTION_CODE_FILE    = 'solution.py'
-SOLUTION_NOTES_FILE   = 'solution_notes.md'
-
-def prepare(element_html, data):
-    data['params']['random_number'] = random.random()
-    return data
 
 
 #
@@ -31,6 +21,7 @@ def read_file_lines(data, filename, error_if_not_found=True):
         else:
             return False
 
+
 def get_answers_name(element_html):
     # use answers-name to namespace multiple pl-faded-parsons elements on a page
     element = xml.fragment_fromstring(element_html)
@@ -41,22 +32,19 @@ def get_answers_name(element_html):
         answers_name = ''
     return answers_name
 
+
 def get_student_code(element_html, data):
-    element = xml.fragment_fromstring(element_html)
     answers_name = get_answers_name(element_html)
     student_code = data['submitted_answers'].get(answers_name + 'student-parsons-solution', None)
     return student_code
 
+
 def base64_encode(s):
     return base64.b64encode(s.encode("ascii")).decode("ascii")
 
-# def render_markdown(text):
-#     html = markdown.markdown(text)  # module 'markdown' no longer supported
-#     return html
 
 def render_question_panel(element_html, data):
-    """Render the panel that displays the question (from code_lines.py) and interaction boxes"""
-
+    """Render the panel that displays the question (from code_lines.txt) and interaction boxes"""
     element = xml.fragment_fromstring(element_html)
     answers_name = get_answers_name(element_html)
     vertical_format = pl.get_string_attrib(element, "format", None) == "vertical"
@@ -71,7 +59,7 @@ def render_question_panel(element_html, data):
 
     html_params = {
         "answers_name": answers_name,
-        "code_lines":  str(element.text),
+        "code_lines": str(element.text),
         "populate_info": populate_info,
         "student_order_info": student_order_info,
         "solution_order_info": solution_order_info,
@@ -94,7 +82,7 @@ def render_question_panel(element_html, data):
                 'Add format="vertical" to your element to use this feature.')
 
         code_lines = get_child_text_by_tag(element, "code-lines") or \
-            read_file_lines(data, QUESTION_CODE_FILE, error_if_not_found=False)
+            read_file_lines(data, 'code_lines.txt', error_if_not_found=False)
 
         if not code_lines:
             raise Exception("A non-empty code_lines.txt or <code-lines> child must be provided in horizontal mode.")
@@ -131,16 +119,16 @@ def render_submission_panel(element_html, data):
 
 def render_answer_panel(element_html, data):
     """Show the instructor's reference solution"""
-    answers_name = get_answers_name(element_html)
-    code = data['submitted_answers'].get(answers_name + 'code-lines', None)
     html_params = {
         "solution_path": "tests/ans.py",
-        # "notes": render_markdown(read_file_lines(data, SOLUTION_NOTES_FILE, error_if_not_found=False))
-        # "notes": data,
     }
     with open('pl-faded-parsons-answer.mustache', 'r') as f:
         return chevron.render(f, html_params).strip()
 
+
+#
+# Main functions
+#
 def render(element_html, data):
     panel_type = data['panel']
     if panel_type == 'question':
@@ -151,6 +139,7 @@ def render(element_html, data):
         return render_answer_panel(element_html, data)
     else:
         raise Exception(f'Invalid panel type: {panel_type}')
+
 
 def parse(element_html, data):
     """Parse student's submitted answer (HTML form submission)"""
@@ -165,21 +154,21 @@ def parse(element_html, data):
 
     file_name = pl.get_string_attrib(element, 'file-name', 'user_code.py')
 
-    _files = [
+    data['submitted_answers']['_files'] = [
         {
             "name": file_name,
             "contents": base64_encode(get_student_code(element_html, data))
         }
     ]
-    data['submitted_answers']['_files'] = []
-    data['submitted_answers']['_files'].extend(_files)
+
     # TBD do error checking here for other attribute values....
     # set data['format_errors']['elt'] to an error message indicating an error with the
     # contents/format of the HTML element named 'elt'
-
     return
 
+
 def grade(element_html, data):
-    """Grade the student's response; many strategies are possible..."""
-    #no need because externally graded
+    """ Grade the student's response; many strategies are possible, but none are necessary.
+        This is externally autograded by a custom library.
+    """
     pass
