@@ -4,8 +4,8 @@ import lxml.html as xml
 import random
 import chevron
 import os
-import base64
-import json
+import pygments
+import html
 
 QUESTION_CODE_FILE     = 'code_lines.py'
 SOLUTION_CODE_FILE    = 'solution.py'
@@ -15,7 +15,7 @@ def prepare(element_html, data):
     data['params']['random_number'] = random.random()
     return data
 
-
+    
 #
 # Helper functions
 #
@@ -47,12 +47,6 @@ def get_student_code(element_html, data):
     student_code = data['submitted_answers'].get(answers_name + 'student-parsons-solution', None)
     return student_code
 
-def base64_encode(s):
-    return base64.b64encode(s.encode("ascii")).decode("ascii")
-
-# def render_markdown(text):
-#     html = markdown.markdown(text)  # module 'markdown' no longer supported
-#     return html
 
 def render_question_panel(element_html, data):
     """Render the panel that displays the question (from code_lines.py) and interaction boxes"""
@@ -61,94 +55,98 @@ def render_question_panel(element_html, data):
     answers_name = get_answers_name(element_html)
     vertical_format = pl.get_string_attrib(element, "format", "") == "vertical"
 
-    populate_info = []
-    for blank in data['submitted_answers']:
-        if blank[0:24] == 'parsons-solutioncodeline':
-            populate_info.append({'name': blank, 'value': data['submitted_answers'][blank]})
-
-    student_order_info = json.loads(data['submitted_answers']['starter-code-order']) if 'starter-code-order' in data['submitted_answers'] else []
-    solution_order_info = json.loads(data['submitted_answers']['parsons-solution-order']) if 'parsons-solution-order' in data['submitted_answers'] else []
-
     html_params = {
-        "answers_name": answers_name,        
-        "code_lines":  str(element.text),
-        "populate_info": populate_info,
-        "student_order_info": student_order_info,
-        "solution_order_info": solution_order_info,
+        "answers_name": answers_name,
     }
 
-    def get_child_text_by_tag(element, tag: str) -> str:
-        """get the innerHTML of the first child of `element` that has the tag `tag`
-        default value is empty string"""
-        return next( 
-            (   elem.text 
-                for elem in element 
-                if elem.tag == tag  ), 
-            ""
-        )
-    
-    try:    
+    if vertical_format: 
+        def get_child_text_by_tag(element, tag: str) -> str:
+            """get the innerHTML of the first child of `element` that has the tag `tag`
+            default value is empty string"""
+            return next( 
+                (   elem.text 
+                    for elem in element 
+                    if elem.tag == tag  ), 
+                ""
+            )
+
+        pre_text = get_child_text_by_tag(element, "pre-text")
+        post_text = get_child_text_by_tag(element, "post-text")
         code_lines = get_child_text_by_tag(element, "code-lines")
+
+        lang = pl.get_string_attrib(element, "language", None)
+        def format_code(raw_code: str) -> str:
+            # this method's code is shamelessly ripped from the code for the `pl-code` element as 
+            #   of 16 Aug 2022
+            code = raw_code[:]
+            code = code.rstrip()
+
+            if lang is not None:
+                lexer_class = pygments.lexers.find_lexer_class(lang)
+                if lexer_class is not None:
+                    # Instantiate the class if we found it
+                    lexer = lexer_class()
+                else:
+                    try:
+                        # Search by language aliases
+                        # This throws an Exception if it's not found, and returns an instance if found.
+                        lexer = pygments.lexers.get_lexer_by_name(lang)
+                    except pygments.util.ClassNotFound:
+                        lexer = None
+            else:
+                class NoHighlightingLexer(pygments.lexer.Lexer):
+                    """
+                    Dummy lexer for when syntax highlighting is not wanted, but we still
+                    want to run it through the highlighter for styling and code escaping.
+                    """
+                    def __init__(self, **options):
+                        pygments.lexer.Lexer.__init__(self, **options)
+                        self.compress = options.get('compress', '')
+
+                    def get_tokens_unprocessed(self, text):
+                        return [(0, pygments.token.Token.Text, text)]
+                
+                lexer = NoHighlightingLexer()
+
+            formatter = pygments.formatters.HtmlFormatter(
+                style="friendly",
+                cssclass="mb-2 rounded",
+                prestyles="padding: 0.5rem; margin-bottom: 0px",
+                noclasses=True
+            )
+
+            return pygments.highlight(html.unescape(code), lexer, formatter)
+
+        if pre_text != "":
+            pre_text = format_code(pre_text)
+        if post_text != "":
+            post_text = format_code(post_text)
         if code_lines == "":
             html_params.update({ 
                 "code_lines" : read_file_lines(data, QUESTION_CODE_FILE) 
             })
-        else:
-            html_params.update({
-                "code_lines" : code_lines
-            })
-    except StopIteration as e: 
-        # catch the error thrown by `get_child_text_by_tag` if there's 
-        #   no <code-lines> element
-        # if we do, then we don't need to update code-lines, as that means 
-        #   this is a question without the <code-lines> sub-element
-        pass
 
-    if vertical_format: 
-        
-        pre_text = get_child_text_by_tag(element, "pre-text")
-        post_text = get_child_text_by_tag(element, "post-text")
-
-        lang = pl.get_string_attrib(element, "language", None)
-
-        while pre_text[-1] == "\n":
-            pre_text = pre_text[:-1]
-        while post_text[0] == '\n':
-            post_text = post_text[1:]
-            
         html_params.update({
             "vertical" : {
                 "pre_text" : pre_text,
                 "post_text" : post_text,
-                "answers_name" : answers_name,
+                "answers_name" : answers_name
             },
         })
-
-        if lang is not None:
-            html_params["vertical"].update({
-                "language" : f"language=\"lang\""
-            })
 
     with open('pl-faded-parsons-question.mustache', 'r') as f:
         return chevron.render(f, html_params).strip()
 
 def render_submission_panel(element_html, data):
     """Show student what they submitted"""
-    html_params = {
-        'code': get_student_code(element_html, data),
-    }
-    with open('pl-faded-parsons-submission.mustache', 'r') as f:
-        return chevron.render(f, html_params).strip()
+    html_params = {}
+    pass
 
 
 def render_answer_panel(element_html, data):
     """Show the instructor's reference solution"""
-    answers_name = get_answers_name(element_html)
-    code = data['submitted_answers'].get(answers_name + 'code-lines', None)
     html_params = {
-        "solution_path": "tests/ans.py",
-        # "notes": render_markdown(read_file_lines(data, SOLUTION_NOTES_FILE, error_if_not_found=False))
-        # "notes": data,
+        "notes": read_file_lines(data, SOLUTION_NOTES_FILE, error_if_not_found=False)
     }
     with open('pl-faded-parsons-answer.mustache', 'r') as f:
         return chevron.render(f, html_params).strip()
@@ -164,6 +162,8 @@ def render(element_html, data):
     else:
         raise Exception(f'Invalid panel type: {panel_type}')
 
+
+
 def parse(element_html, data):
     """Parse student's submitted answer (HTML form submission)"""
     # make an XML fragment that can be passed around to other PL functions,
@@ -173,25 +173,19 @@ def parse(element_html, data):
     # `element` is now an XML data structure - see docs for LXML library at lxml.de
     
     # only Python problems are allowed right now (lang MUST be "py")
-    # lang = pl.get_string_attrib(element, 'language') # TODO: commenting is a stop gap for the pilot study, find a better solution
+    lang = pl.get_string_attrib(element, 'language')
 
-    file_name = pl.get_string_attrib(element, 'file-name', 'user_code.py')
-
-    _files = [
-        {
-            "name": file_name,
-            "contents": base64_encode(get_student_code(element_html, data))
-        }
-    ]
-    data['submitted_answers']['_files'] = []
-    data['submitted_answers']['_files'].extend(_files)
     # TBD do error checking here for other attribute values....
     # set data['format_errors']['elt'] to an error message indicating an error with the
-    # contents/format of the HTML element named 'elt'
+    # contents/format of the HTML element named 'elt'                               
 
     return
 
 def grade(element_html, data):
     """Grade the student's response; many strategies are possible..."""
-    #no need because externally graded
-    pass
+    student_code = get_student_code(element_html, data)
+    # at this point `student_code` is a string representing the exact submitted Python code
+    # at a minimum, we have to set data['score'] to a value from 0.0...1.0 
+    data['score'] = 1.0
+    return(data)
+
