@@ -44,7 +44,7 @@ def base64_encode(s):
 
 
 def render_question_panel(element_html, data):
-    """Render the panel that displays the question (from code_lines.py) and interaction boxes"""
+    """Render the panel that displays the question (from code_lines.txt) and interaction boxes"""
     element = xml.fragment_fromstring(element_html)
     answers_name = get_answers_name(element_html)
     vertical_format = pl.get_string_attrib(element, "format", None) == "vertical"
