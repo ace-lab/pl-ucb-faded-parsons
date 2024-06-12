@@ -1,4 +1,6 @@
-# Faded Parsons development
+# [___ARCHIVED___](https://github.com/ace-lab/pl-ucb-faded-parsons): Faded Parsons development
+
+___The element has moved to [another repository! (https://github.com/ace-lab/pl-ucb-faded-parsons)](https://github.com/ace-lab/pl-ucb-faded-parsons) Please use that repository for working on the element!___
 
 This bogus course is only for working on the `pl-faded-parsons`
 element.
